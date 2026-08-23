@@ -1,0 +1,178 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: var(--app-background);
+  --color-surface: var(--app-surface);
+  --color-surface-soft: var(--app-surface-soft);
+  --color-surface-pink: var(--app-surface-pink);
+  --color-foreground: var(--app-text);
+  --color-muted: var(--app-text-muted);
+  --color-faint: var(--app-text-faint);
+  --color-primary: var(--app-primary);
+  --color-primary-strong: var(--app-primary-strong);
+  --color-primary-soft: var(--app-primary-soft);
+  --color-secondary: var(--app-secondary);
+  --color-secondary-soft: var(--app-secondary-soft);
+  --color-border: var(--app-border);
+  --color-success: var(--app-success);
+  --color-danger: var(--app-danger);
+  --font-sans: var(--font-manrope);
+  --font-display: var(--font-space-grotesk);
+  --font-mono: var(--font-dm-mono);
+  --radius-card: 1.125rem;
+  --radius-control: 0.75rem;
+  --shadow-float: 0 24px 70px rgb(36 35 38 / 0.2);
+}
+
+:root {
+  --app-background: #f7f5f2;
+  --app-surface: #ffffff;
+  --app-surface-soft: #f1efff;
+  --app-surface-pink: #fff0f4;
+  --app-text: #242326;
+  --app-text-muted: #73717a;
+  --app-text-faint: #9c9aa2;
+  --app-primary: #5b6cf9;
+  --app-primary-strong: #4555db;
+  --app-primary-soft: #dedcff;
+  --app-secondary: #e95d8e;
+  --app-secondary-soft: #f8dce6;
+  --app-border: #dddde5;
+  --app-success: #5f8f87;
+  --app-danger: #c94848;
+  --app-avatar-blue: #7284dd;
+  --app-avatar-pink: #e581a4;
+  --app-avatar-cyan: #6caabe;
+  --app-avatar-lavender: #a89cd0;
+  color-scheme: light;
+}
+
+.theme-preview[data-palette="terracotta"] {
+  --app-primary: #c86e51;
+  --app-primary-strong: #a8543b;
+  --app-primary-soft: #f2d8cd;
+  --app-secondary: #a9697a;
+  --app-secondary-soft: #f4dfe5;
+}
+
+.theme-preview[data-palette="ocean"] {
+  --app-primary: #287f98;
+  --app-primary-strong: #17677d;
+  --app-primary-soft: #d3e9ee;
+  --app-secondary: #cc657f;
+  --app-secondary-soft: #f5dce3;
+}
+
+.theme-preview[data-mode="dark"] {
+  --app-background: #15141a;
+  --app-surface: #1e1d26;
+  --app-surface-soft: #2a2839;
+  --app-surface-pink: #2e1d2a;
+  --app-text: #f2f0ec;
+  --app-text-muted: #aaa7b3;
+  --app-text-faint: #777481;
+  --app-primary-soft: #353349;
+  --app-secondary-soft: #482837;
+  --app-border: #363440;
+  --app-success: #85b4ac;
+  --app-danger: #f08383;
+  --app-avatar-blue: #5f70d4;
+  --app-avatar-pink: #c9698b;
+  --app-avatar-cyan: #5798ad;
+  --app-avatar-lavender: #8f82bd;
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  .theme-preview[data-mode="system"] {
+    --app-background: #15141a;
+    --app-surface: #1e1d26;
+    --app-surface-soft: #2a2839;
+    --app-surface-pink: #2e1d2a;
+    --app-text: #f2f0ec;
+    --app-text-muted: #aaa7b3;
+    --app-text-faint: #777481;
+    --app-primary-soft: #353349;
+    --app-secondary-soft: #482837;
+    --app-border: #363440;
+    --app-success: #85b4ac;
+    --app-danger: #f08383;
+    --app-avatar-blue: #5f70d4;
+    --app-avatar-pink: #c9698b;
+    --app-avatar-cyan: #5798ad;
+    --app-avatar-lavender: #8f82bd;
+    color-scheme: dark;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--app-background);
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background: var(--app-background);
+  color: var(--app-text);
+  font-family: var(--font-manrope), sans-serif;
+  text-rendering: optimizeLegibility;
+}
+
+@layer base {
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+  }
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--app-primary) 48%, transparent);
+  outline-offset: 3px;
+}
+
+::selection {
+  background: var(--app-primary-soft);
+  color: var(--app-text);
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 320ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
