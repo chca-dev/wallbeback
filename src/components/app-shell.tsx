@@ -1,12 +1,33 @@
 'use client'
 
-import { Sparkles } from 'lucide-react'
+import { LogOut, Sparkles } from 'lucide-react'
 import { useState } from 'react'
+import { logoutAction } from '@/app/auth-actions'
 import { Avatar } from '@/components/avatar'
 import { DesktopNavigation, MobileNavigation } from '@/components/app-navigation'
 import { ThemeControls, type ThemeMode, type ThemePalette } from '@/components/theme-controls'
+import type { UserRole } from '@/db/schema/enums'
+import type { AvatarTone } from '@/lib/demo-data'
 
-export const AppShell = ({ children }: { children: React.ReactNode }) => {
+type AppShellUser = {
+  displayName: string
+  familyName: string
+  role: UserRole
+  avatarTone: AvatarTone
+}
+
+type AppShellProps = {
+  children: React.ReactNode
+  user: AppShellUser
+}
+
+const roleLabels: Record<UserRole, string> = {
+  admin: 'Admin',
+  adult: 'Adulte',
+  child: 'Enfant',
+}
+
+export const AppShell = ({ children, user }: AppShellProps) => {
   const [mode, setMode] = useState<ThemeMode>('system')
   const [palette, setPalette] = useState<ThemePalette>('violet')
 
@@ -23,12 +44,12 @@ export const AppShell = ({ children }: { children: React.ReactNode }) => {
       <div className="mt-11 flex items-center gap-2.5 rounded-[14px] border border-border bg-surface p-2.5">
         <span className="grid size-[31px] place-items-center rounded-[9px] bg-primary text-[10px] font-extrabold text-white">FM</span>
         <div className="min-w-0 flex-1">
-          <strong className="block truncate text-xs">Famille Martin</strong>
-          <span className="mt-0.5 block text-[10px] text-muted">6 membres</span>
+          <strong className="block truncate text-xs">{user.familyName}</strong>
+          <span className="mt-0.5 block text-[10px] text-muted">Espace privé</span>
         </div>
       </div>
 
-      <DesktopNavigation />
+      <DesktopNavigation isAdmin={user.role === 'admin'} />
 
       <div className="mt-auto">
         <div className="flex gap-2.5 rounded-[14px] bg-surface-pink p-[15px] text-[10px] leading-[1.6] text-muted transition-transform duration-200 hover:scale-[1.02]">
@@ -39,9 +60,20 @@ export const AppShell = ({ children }: { children: React.ReactNode }) => {
           </p>
         </div>
         <div className="mt-5 flex items-center gap-2.5 rounded-[10px] px-2.5 py-2">
-          <Avatar name="Cha" tone="blue" />
-          <span className="text-[13px] font-semibold">Cha</span>
-          <span className="ml-auto rounded-full bg-primary-soft px-2 py-0.5 text-[9px] font-bold text-primary-strong">Admin</span>
+          <Avatar name={user.displayName} tone={user.avatarTone} />
+          <span className="min-w-0 flex-1 truncate text-[13px] font-semibold">{user.displayName}</span>
+          <span className="rounded-full bg-primary-soft px-2 py-0.5 text-[9px] font-bold text-primary-strong">
+            {roleLabels[user.role]}
+          </span>
+          <form action={logoutAction}>
+            <button
+              type="submit"
+              aria-label="Se déconnecter"
+              className="grid size-8 place-items-center rounded-full text-muted transition-colors hover:bg-surface-soft hover:text-danger"
+            >
+              <LogOut size={15} />
+            </button>
+          </form>
         </div>
       </div>
     </aside>
@@ -61,16 +93,25 @@ export const AppShell = ({ children }: { children: React.ReactNode }) => {
             onModeChange={setMode}
             onPaletteChange={setPalette}
           />
+          <form action={logoutAction} className="min-[821px]:hidden">
+            <button
+              type="submit"
+              aria-label="Se déconnecter"
+              className="grid size-9 place-items-center rounded-full text-muted transition-colors hover:bg-surface-soft hover:text-danger"
+            >
+              <LogOut size={17} />
+            </button>
+          </form>
           <div className="flex items-center gap-2 rounded-[22px] py-[5px] pl-[5px] pr-2.5 transition-colors duration-200 hover:bg-surface-soft">
-            <Avatar name="Cha" tone="blue" size="sm" />
-            <span className="hidden text-xs font-bold min-[821px]:block">Cha</span>
+            <Avatar name={user.displayName} tone={user.avatarTone} size="sm" />
+            <span className="hidden max-w-32 truncate text-xs font-bold min-[821px]:block">{user.displayName}</span>
           </div>
         </div>
       </header>
       <main>{children}</main>
     </div>
 
-    <MobileNavigation />
+    <MobileNavigation isAdmin={user.role === 'admin'} />
   </div>
   )
 }

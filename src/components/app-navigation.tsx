@@ -1,25 +1,36 @@
 'use client'
 
-import { CalendarDays, Camera, Compass, UsersRound } from 'lucide-react'
+import { CalendarDays, Camera, Compass, ShieldCheck, UsersRound } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
-const items = [
+const mainItems = [
   { href: '/wall', label: 'Wall', icon: Compass },
   { href: '/photos', label: 'Photos', icon: Camera },
   { href: '/calendar', label: 'Calendrier', icon: CalendarDays },
   { href: '/family', label: 'Famille', icon: UsersRound },
 ]
 
-export const DesktopNavigation = () => {
+const getItems = (isAdmin: boolean) => (
+  isAdmin
+    ? [...mainItems, { href: '/admin/users', label: 'Administration', icon: ShieldCheck }]
+    : mainItems
+)
+
+type NavigationProps = {
+  isAdmin?: boolean
+}
+
+export const DesktopNavigation = ({ isAdmin = false }: NavigationProps) => {
   const pathname = usePathname()
+  const items = getItems(isAdmin)
 
   return (
     <nav aria-label="Navigation principale" className="mt-[38px]">
       <p className="mb-3 px-3 font-mono text-[9px] uppercase tracking-[0.12em] text-faint">La maison</p>
       <div>
         {items.map(({ href, label, icon: Icon }) => {
-          const active = pathname === href
+          const active = pathname === href || pathname.startsWith(`${href}/`)
           return (
             <Link
               key={href}
@@ -40,13 +51,14 @@ export const DesktopNavigation = () => {
   )
 }
 
-export const MobileNavigation = () => {
+export const MobileNavigation = ({ isAdmin = false }: NavigationProps) => {
   const pathname = usePathname()
+  const items = getItems(isAdmin)
 
   return (
     <nav aria-label="Navigation mobile" className="fixed inset-x-0 bottom-0 z-40 flex h-[70px] items-center justify-around border-t border-border bg-surface/95 px-[14px] pb-2.5 pt-2 backdrop-blur-md min-[821px]:hidden">
       {items.map(({ href, label, icon: Icon }) => {
-        const active = pathname === href
+        const active = pathname === href || pathname.startsWith(`${href}/`)
         return (
           <Link
             key={href}

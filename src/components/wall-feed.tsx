@@ -56,7 +56,15 @@ const initialPosts: Post[] = [
   },
 ]
 
-export const WallFeed = () => {
+type WallFeedProps = {
+  currentUser: {
+    displayName: string
+    familyName: string
+    avatarTone: AvatarTone
+  }
+}
+
+export const WallFeed = ({ currentUser }: WallFeedProps) => {
   const [posts, setPosts] = useState(initialPosts)
   const [content, setContent] = useState('')
   const [adultsOnly, setAdultsOnly] = useState(false)
@@ -68,7 +76,7 @@ export const WallFeed = () => {
     const value = content.trim()
     if (!value) return
     setPosts((current) => [
-      { id: crypto.randomUUID(), author: 'Cha', tone: 'blue', content: value, time: 'À l’instant', adultsOnly, replies: [] },
+      { id: crypto.randomUUID(), author: currentUser.displayName, tone: currentUser.avatarTone, content: value, time: 'À l’instant', adultsOnly, replies: [] },
       ...current,
     ])
     setContent('')
@@ -80,7 +88,7 @@ export const WallFeed = () => {
     const value = reply.trim()
     if (!value) return
     setPosts((current) => current.map((post) => post.id === postId
-      ? { ...post, replies: [...post.replies, { id: crypto.randomUUID(), author: 'Cha', tone: 'blue', content: value, time: 'À l’instant' }] }
+      ? { ...post, replies: [...post.replies, { id: crypto.randomUUID(), author: currentUser.displayName, tone: currentUser.avatarTone, content: value, time: 'À l’instant' }] }
       : post))
     setReply('')
     setReplyingTo(null)
@@ -93,10 +101,10 @@ export const WallFeed = () => {
         className={`mb-6 rounded-[18px] border bg-surface p-5 transition-colors ${adultsOnly ? 'border-secondary-soft' : 'border-border'}`}
       >
         <div className="mb-[14px] flex items-center gap-[11px]">
-          <Avatar name="Cha" tone="blue" />
+          <Avatar name={currentUser.displayName} tone={currentUser.avatarTone} />
           <div>
-            <strong className="block text-sm">Cha</strong>
-            <span className="text-[11px] text-muted">Partagé avec {adultsOnly ? 'les adultes' : 'la famille Martin'}</span>
+            <strong className="block text-sm">{currentUser.displayName}</strong>
+            <span className="text-[11px] text-muted">Partagé avec {adultsOnly ? 'les adultes' : currentUser.familyName}</span>
           </div>
           {adultsOnly ? <span className="ml-auto flex items-center gap-1 rounded-full bg-secondary-soft px-2.5 py-1 text-[11px] font-bold text-secondary"><Lock size={11} /> Adultes</span> : null}
         </div>
@@ -165,7 +173,7 @@ export const WallFeed = () => {
 
             {replyingTo === post.id ? (
               <form onSubmit={(event) => submitReply(event, post.id)} className="mt-[14px] flex items-center gap-2.5 pl-[30px]">
-                <Avatar name="Cha" tone="blue" size="sm" />
+                <Avatar name={currentUser.displayName} tone={currentUser.avatarTone} size="sm" />
                 <input
                   autoFocus
                   value={reply}

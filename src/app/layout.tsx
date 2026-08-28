@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     default: 'Wall Be Back',
     template: '%s · Wall Be Back',
   },
-  description: 'Le petit espace privé de la famille Martin.',
+  description: 'Le petit espace privé de la famille.',
 }
 
 const RootLayout = ({ children }: Readonly<{ children: React.ReactNode }>) => (
