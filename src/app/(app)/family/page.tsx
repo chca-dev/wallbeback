@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { and, count, eq } from 'drizzle-orm'
-import { Camera, CalendarDays } from 'lucide-react'
+import { CalendarDays, Camera, Crown } from 'lucide-react'
 import { Avatar } from '@/components/avatar'
 import { PageHeading } from '@/components/page-heading'
 import { db } from '@/db/client'
@@ -9,6 +9,7 @@ import { photoPeople } from '@/db/schema/photos'
 import { users } from '@/db/schema/users'
 import { requireCurrentUser } from '@/lib/auth/session'
 import type { AvatarTone } from '@/lib/demo-data'
+import { getBannerKing } from '@/lib/banner-rotation'
 
 export const metadata: Metadata = { title: 'Famille' }
 
@@ -28,6 +29,7 @@ const FamilyPage = async () => {
 				role: users.role,
 				avatarTone: users.avatarTone,
 				avatarStorageKey: users.avatarStorageKey,
+				createdAt: users.createdAt,
 			})
 			.from(users)
 			.where(and(eq(users.familyId, currentUser.familyId), eq(users.isActive, true)))
@@ -38,6 +40,7 @@ const FamilyPage = async () => {
 			.where(eq(photoPeople.familyId, currentUser.familyId))
 			.groupBy(photoPeople.userId),
 	])
+	const bannerKing = getBannerKing(familyUsers)
 	const photoCountByUser = new Map(taggedPhotoCounts.map(({ userId, value }) => [userId, value]))
 
 	return (
@@ -61,9 +64,7 @@ const FamilyPage = async () => {
 						<div className="flex items-center gap-4">
 							<Avatar name={member.displayName} tone={getAvatarTone(member.avatarTone)} imageUrl={member.avatarStorageKey ? `/avatar/${member.id}` : null} size="lg" />
 							<div className="min-w-0">
-								<h2 className="truncate font-display text-base font-semibold">
-									{member.displayName}
-								</h2>
+								<div className='flex flex-wrap items-center gap-2'><h2 className="truncate font-display text-base font-semibold">{member.displayName}</h2>{bannerKing?.id === member.id ? <span className='flex items-center gap-1 font-mono text-[9px] font-semibold uppercase tracking-[0.08em] text-secondary'><Crown size={15} aria-hidden='true' /> Roi de la bannière</span> : null}</div>
 								<p className="text-xs text-muted">Voir la fiche</p>
 							</div>
 						</div>

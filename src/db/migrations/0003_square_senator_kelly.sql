@@ -1,0 +1,1 @@
+ALTER TABLE "settings" ADD COLUMN "banner_storage_key" text;

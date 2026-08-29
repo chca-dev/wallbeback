@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { ImageCropDialog, type CropSelection } from '@/components/image-crop-dialog'
 import { updateMemberProfileAction, type MemberProfileActionState } from '@/app/(app)/family/actions'
 
 type MemberProfileFormProps = { displayName: string, avatarTone: string, hasAvatar: boolean }
@@ -19,12 +20,14 @@ export const MemberProfileForm = ({ displayName, avatarTone, hasAvatar }: Member
   const [avatarMode, setAvatarMode] = useState(hasAvatar ? 'photo' : 'initials')
   const [avatarError, setAvatarError] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
+  const [cropFile, setCropFile] = useState<File | null>(null)
 
-  const uploadAvatar = async (file: File) => {
+  const uploadAvatar = async (file: File, crop: CropSelection) => {
     setUploading(true)
     setAvatarError(null)
     const data = new FormData()
     data.set('file', file)
+    data.set('crop', JSON.stringify(crop))
     const response = await fetch('/api/avatar', { method: 'POST', body: data })
     const result = await response.json()
     setUploading(false)
@@ -45,12 +48,13 @@ export const MemberProfileForm = ({ displayName, avatarTone, hasAvatar }: Member
     <form action={action} className='rounded-card border border-border bg-surface p-5'>
       <h2 className='font-display text-lg font-semibold'>Modifier mon profil</h2>
       <label className='mt-4 grid gap-1.5 text-xs font-semibold'>Nom affiché<input name='displayName' required maxLength={120} defaultValue={displayName} className='rounded-xl border border-border bg-background px-3 py-2.5 text-sm font-normal' /></label>
-      <fieldset className='mt-4'><legend className='text-xs font-semibold'>Avatar</legend><div className='mt-2 grid gap-3'><label className={`cursor-pointer rounded-xl border p-3 text-xs font-semibold ${avatarMode === 'photo' ? 'border-primary bg-primary-soft' : 'border-border'}`}><span>Utiliser une photo</span><input className='mt-2 block w-full text-xs font-normal' type='file' accept='image/jpeg,image/png,image/webp' disabled={uploading} onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadAvatar(file) }} /></label><button type='button' onClick={() => void selectInitialsAvatar()} className={`rounded-xl border p-3 text-left text-xs font-semibold ${avatarMode === 'initials' ? 'border-primary bg-primary-soft' : 'border-border'}`}>Utiliser mes initiales</button></div></fieldset>
+      <fieldset className='mt-4'><legend className='text-xs font-semibold'>Avatar</legend><div className='mt-2 grid gap-3'><label className={`cursor-pointer rounded-xl border p-3 text-xs font-semibold ${avatarMode === 'photo' ? 'border-primary bg-primary-soft' : 'border-border'}`}><span>Utiliser une photo</span><input className='mt-2 block w-full text-xs font-normal' type='file' accept='image/jpeg,image/png,image/webp' disabled={uploading} onChange={(event) => { const file = event.target.files?.[0]; if (file) setCropFile(file); event.target.value = '' }} /></label><button type='button' onClick={() => void selectInitialsAvatar()} className={`rounded-xl border p-3 text-left text-xs font-semibold ${avatarMode === 'initials' ? 'border-primary bg-primary-soft' : 'border-border'}`}>Utiliser mes initiales</button></div></fieldset>
       {avatarMode === 'initials' ? <fieldset className='mt-4'><legend className='sr-only'>Couleur de l’avatar</legend><div className='flex flex-wrap gap-2'>{tones.map((tone) => <label key={tone.value} className='cursor-pointer'><input className='peer sr-only' type='radio' name='avatarTone' value={tone.value} defaultChecked={avatarTone === tone.value} aria-label={tone.label} /><span className={`block size-9 rounded-full border-2 border-transparent peer-checked:border-foreground ${tone.color}`} /></label>)}</div></fieldset> : <input type='hidden' name='avatarTone' value={avatarTone} />}
       {avatarError ? <p className='mt-3 text-xs text-danger'>{avatarError}</p> : null}
       {state.error ? <p className='mt-3 text-xs text-danger'>{state.error}</p> : null}
       {state.success ? <p className='mt-3 text-xs text-success'>{state.success}</p> : null}
       <button disabled={pending} className='mt-4 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-white disabled:opacity-50'>{pending ? 'Enregistrement…' : 'Enregistrer'}</button>
+      {cropFile ? <ImageCropDialog file={cropFile} aspect={1} title='Cadrer l’avatar' onCancel={() => setCropFile(null)} onConfirm={(crop) => { const file = cropFile; setCropFile(null); void uploadAvatar(file, crop) }} /> : null}
     </form>
   )
 }

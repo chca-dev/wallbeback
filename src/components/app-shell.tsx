@@ -1,6 +1,7 @@
 'use client'
 
 import { LogOut, Sparkles } from 'lucide-react'
+import { usePathname } from 'next/navigation'
 import { logoutAction } from '@/app/auth-actions'
 import { Avatar } from '@/components/avatar'
 import { DesktopNavigation, MobileNavigation } from '@/components/app-navigation'
@@ -31,6 +32,7 @@ const roleLabels: Record<UserRole, string> = {
 }
 
 export const AppShell = ({ children, user }: AppShellProps) => {
+  const pathname = usePathname()
   return (
   <div className="flex min-h-screen bg-background text-foreground">
     <aside className="hidden w-[214px] shrink-0 flex-col border-r border-border bg-surface px-4 pb-6 pt-[30px] min-[821px]:flex min-[1101px]:w-[248px] min-[1101px]:px-[22px]">
@@ -79,13 +81,13 @@ export const AppShell = ({ children, user }: AppShellProps) => {
     </aside>
 
     <div className="min-w-0 flex-1">
-      <header className="flex h-16 items-center justify-between border-b border-border px-5 min-[821px]:h-[76px] min-[821px]:justify-end min-[821px]:px-8 min-[1101px]:px-[52px]">
-        <div className="group flex items-center gap-2.5 font-display text-[17px] font-bold tracking-[-0.04em] min-[821px]:hidden">
+      <header className="flex h-14 items-center justify-between border-b border-border px-5 min-[821px]:h-[66px] min-[821px]:px-8 min-[1101px]:px-[52px]">
+        {pathname === '/wall' ? <p className='font-display text-lg font-semibold tracking-[-0.025em] min-[821px]:text-[22px]'>Les nouvelles du <span className='text-primary'>front.</span></p> : <div className="group flex items-center gap-2.5 font-display text-[17px] font-bold tracking-[-0.04em] min-[821px]:hidden">
           <span className="grid size-[30px] -rotate-[7deg] place-items-center rounded-[10px] bg-primary text-white transition-transform duration-300 group-hover:rotate-0 group-hover:scale-[1.08]">
             <Sparkles className="rotate-[7deg] transition-transform duration-300 group-hover:rotate-0" size={16} />
           </span>
           Wall Be Back
-        </div>
+        </div>}
         <div className="flex items-center gap-[23px]">
           <ThemeControls
             mode={user.themeMode}

@@ -40,6 +40,24 @@ export type ProcessedAvatar = {
   byteSize: number
 }
 
+export type ProcessedBanner = {
+  data: Buffer
+  byteSize: number
+}
+
+export type CropSelection = { x: number, y: number, width: number, height: number }
+
+const cropImage = async (input: Buffer, crop?: CropSelection) => {
+  if (!crop) return input
+  const metadata = await sharp(input).metadata()
+  if (!metadata.width || !metadata.height) throw createMediaProcessingError('invalid-image', 'Le cadrage est invalide.')
+  const left = Math.max(0, Math.round(metadata.width * crop.x / 100))
+  const top = Math.max(0, Math.round(metadata.height * crop.y / 100))
+  const width = Math.min(metadata.width - left, Math.max(1, Math.round(metadata.width * crop.width / 100)))
+  const height = Math.min(metadata.height - top, Math.max(1, Math.round(metadata.height * crop.height / 100)))
+  return sharp(input).extract({ left, top, width, height }).toBuffer()
+}
+
 const createMediaProcessingError = (
   code: MediaProcessingErrorCode,
   message: string,
@@ -161,11 +179,23 @@ export const processImage = (input: Buffer): Promise<ProcessedImage> => enqueueI
   () => processImageImmediately(input),
 )
 
-export const processAvatarImage = async (input: Buffer): Promise<ProcessedAvatar> => {
+export const processAvatarImage = async (input: Buffer, crop?: CropSelection): Promise<ProcessedAvatar> => {
   const processedImage = await processImage(input)
-  const data = await sharp(processedImage.thumb, { failOn: 'warning' })
+  const croppedImage = await cropImage(processedImage.thumb, crop)
+  const data = await sharp(croppedImage, { failOn: 'warning' })
     .resize({ width: 256, height: 256, fit: 'cover', position: 'centre' })
     .webp({ quality: 68 })
+    .toBuffer()
+
+  return { data, byteSize: data.length }
+}
+
+export const processBannerImage = async (input: Buffer, crop?: CropSelection): Promise<ProcessedBanner> => {
+  const processedImage = await processImage(input)
+  const croppedImage = await cropImage(processedImage.display, crop)
+  const data = await sharp(croppedImage, { failOn: 'warning' })
+    .resize({ width: 1600, height: 400, fit: 'cover', position: 'centre' })
+    .webp({ quality: 78 })
     .toBuffer()
 
   return { data, byteSize: data.length }

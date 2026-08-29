@@ -22,6 +22,13 @@
       "when": 1788025423914,
       "tag": "0002_dusty_hairball",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1788026647078,
+      "tag": "0003_square_senator_kelly",
+      "breakpoints": true
     }
   ]
 }

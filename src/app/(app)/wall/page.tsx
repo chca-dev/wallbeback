@@ -3,13 +3,16 @@ import { and, asc, desc, eq } from 'drizzle-orm'
 import { z } from 'zod'
 
 import { WallFeed, type WallPost } from '@/components/wall-feed'
-import { PageHeading } from '@/components/page-heading'
+import { WallBanner } from '@/components/wall-banner'
 import { db } from '@/db/client'
 import { photos } from '@/db/schema/photos'
+import { settings } from '@/db/schema/settings'
+import { users } from '@/db/schema/users'
 import { posts, replies } from '@/db/schema/wall'
 import type { AvatarTone } from '@/lib/demo-data'
 import { requireCurrentUser } from '@/lib/auth/session'
 import { serverEnvironment } from '@/lib/env'
+import { getBannerKing } from '@/lib/banner-rotation'
 
 export const metadata: Metadata = { title: 'Le mur' }
 
@@ -68,7 +71,7 @@ const WallPage = async ({ searchParams }: WallPageProps) => {
   const visibilityCondition = currentUser.role === 'child'
     ? and(eq(posts.familyId, currentUser.familyId), eq(posts.visibility, 'family'))
     : eq(posts.familyId, currentUser.familyId)
-  const [recentFamilyPosts, requestedPost] = await Promise.all([
+  const [recentFamilyPosts, requestedPost, familyMembers, familySettings] = await Promise.all([
     db.query.posts.findMany({
       where: visibilityCondition,
       orderBy: [desc(posts.createdAt)],
@@ -84,7 +87,12 @@ const WallPage = async ({ searchParams }: WallPageProps) => {
           with: postRelations,
         })
       : Promise.resolve(undefined),
+    db.select({ id: users.id, displayName: users.displayName, createdAt: users.createdAt }).from(users)
+      .where(and(eq(users.familyId, currentUser.familyId), eq(users.isActive, true)))
+      .orderBy(asc(users.createdAt), asc(users.id)),
+    db.query.settings.findFirst({ where: eq(settings.familyId, currentUser.familyId), columns: { bannerStorageKey: true } }),
   ])
+  const bannerKing = getBannerKing(familyMembers)
   const familyPosts = requestedPost && !recentFamilyPosts.some(({ id }) => id === requestedPost.id)
     ? [...recentFamilyPosts, requestedPost]
     : recentFamilyPosts
@@ -115,13 +123,8 @@ const WallPage = async ({ searchParams }: WallPageProps) => {
   }))
 
   return (
-    <div className="mx-auto max-w-[1240px] px-4 pb-[98px] pt-[29px] min-[521px]:px-5 min-[521px]:pb-[100px] min-[521px]:pt-[34px] min-[821px]:px-8 min-[821px]:pb-[70px] min-[821px]:pt-[52px] min-[1101px]:px-[52px]">
-      <PageHeading
-        eyebrow="Le mur de la famille"
-        title="Ce qui se passe"
-        accent="chez nous."
-        description="Les petits moments, les grandes histoires et tout ce qu’on a envie de se raconter."
-      />
+    <div className="mx-auto max-w-[1240px] px-4 pb-[98px] pt-4 min-[521px]:px-5 min-[521px]:pb-[100px] min-[821px]:px-8 min-[821px]:pb-[70px] min-[1101px]:px-[52px]">
+      {bannerKing ? <WallBanner familyId={currentUser.familyId} kingName={bannerKing.displayName} canChange={currentUser.role === 'admin' || currentUser.id === bannerKing.id} hasBanner={Boolean(familySettings?.bannerStorageKey)} /> : null}
 
       <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,680px)_minmax(230px,290px)] lg:gap-12">
         <section aria-label="Fil familial" className="min-w-0">

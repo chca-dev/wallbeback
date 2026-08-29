@@ -7,6 +7,7 @@ import { z } from 'zod'
 import { serverEnvironment } from '@/lib/env'
 import type { ProcessedImage } from '@/lib/media/process-image'
 import type { ProcessedAvatar } from '@/lib/media/process-image'
+import type { ProcessedBanner } from '@/lib/media/process-image'
 
 export const mediaVariantValues = ['display', 'thumb'] as const
 
@@ -15,6 +16,7 @@ export type MediaVariant = typeof mediaVariantValues[number]
 const storageKeySchema = z.string().uuid()
 const mediaRoot = resolve(serverEnvironment.UPLOAD_DIR)
 const avatarRoot = resolve(mediaRoot, 'avatars')
+const bannerRoot = resolve(mediaRoot, 'banners')
 
 const getSafePathInsideMediaRoot = (...segments: string[]) => {
   const targetPath = resolve(mediaRoot, ...segments)
@@ -110,3 +112,26 @@ export const removeAvatarImage = async (storageKey: string) => {
     removeProcessedImage(storageKey),
   ])
 }
+
+const getBannerDirectory = (storageKey: string) => {
+  const parsedStorageKey = storageKeySchema.safeParse(storageKey)
+  if (!parsedStorageKey.success) throw new Error('Clé de bannière invalide')
+  return getSafePathInsideMediaRoot('banners', parsedStorageKey.data)
+}
+
+export const writeBannerImage = async (storageKey: string, banner: ProcessedBanner) => {
+  const finalDirectory = getBannerDirectory(storageKey)
+  const temporaryDirectory = getSafePathInsideMediaRoot('banners', `.upload-${storageKey}-${randomUUID()}`)
+  await mkdir(bannerRoot, { recursive: true })
+  try {
+    await mkdir(temporaryDirectory)
+    await writeFile(join(temporaryDirectory, 'banner.webp'), banner.data, { flag: 'wx' })
+    await rename(temporaryDirectory, finalDirectory)
+  } catch (error) {
+    await rm(temporaryDirectory, { recursive: true, force: true })
+    throw error
+  }
+}
+
+export const readBannerImage = async (storageKey: string) => readFile(join(getBannerDirectory(storageKey), 'banner.webp'))
+export const removeBannerImage = async (storageKey: string) => rm(getBannerDirectory(storageKey), { recursive: true, force: true })

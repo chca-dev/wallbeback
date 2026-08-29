@@ -1,4 +1,4 @@
-import { pgTable, timestamp, uuid, varchar } from 'drizzle-orm/pg-core'
+import { pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core'
 import { families } from './families'
 
 export const settings = pgTable('settings', {
@@ -6,6 +6,7 @@ export const settings = pgTable('settings', {
     .primaryKey()
     .references(() => families.id, { onDelete: 'cascade' }),
   dailyMessage: varchar('daily_message', { length: 280 }),
+  bannerStorageKey: text('banner_storage_key'),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' })
     .defaultNow()
     .notNull(),
