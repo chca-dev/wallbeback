@@ -5,29 +5,38 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { db } from '@/db/client'
 import { postVisibilityValues } from '@/db/schema/enums'
+import { photos } from '@/db/schema/photos'
 import { posts, replies } from '@/db/schema/wall'
 import { requireCurrentUser } from '@/lib/auth/session'
+import { removeProcessedImage } from '@/lib/media/storage'
 
-const contentSchema = z.string().trim().min(1, 'Écris un message.').max(5000, 'Le message est trop long.')
+const contentSchema = z.string().trim().max(5000, 'Le message est trop long.')
+const requiredContentSchema = contentSchema.min(1, 'Écris un message.')
 
-const createPostSchema = z.object({
-  content: contentSchema,
-  visibility: z.enum(postVisibilityValues),
-})
+const createPostSchema = z
+  .object({
+    content: contentSchema,
+    hasPhotos: z.enum(['true', 'false']).transform((value) => value === 'true'),
+    visibility: z.enum(postVisibilityValues),
+  })
+  .refine(
+    ({ content, hasPhotos }) => Boolean(content) || hasPhotos,
+    { path: ['content'], message: 'Écris un message ou ajoute une photo.' },
+  )
 
 const createReplySchema = z.object({
   postId: z.string().uuid(),
-  content: contentSchema,
+  content: requiredContentSchema,
 })
 
 const updatePostSchema = z.object({
   postId: z.string().uuid(),
-  content: contentSchema,
+  content: requiredContentSchema,
 })
 
 const updateReplySchema = z.object({
   replyId: z.string().uuid(),
-  content: contentSchema,
+  content: requiredContentSchema,
 })
 
 const postIdSchema = z.object({ postId: z.string().uuid() })
@@ -36,6 +45,7 @@ const replyIdSchema = z.object({ replyId: z.string().uuid() })
 export type WallActionState = {
   success?: string
   error?: string
+  postId?: string
   fieldErrors?: {
     content?: string[]
   }
@@ -95,6 +105,7 @@ export const createPostAction = async (
   const currentUser = await requireCurrentUser()
   const parsed = createPostSchema.safeParse({
     content: formData.get('content'),
+    hasPhotos: formData.get('hasPhotos'),
     visibility: formData.get('visibility'),
   })
 
@@ -106,15 +117,18 @@ export const createPostAction = async (
     return { error: 'Un profil enfant ne peut pas publier un message réservé aux adultes.' }
   }
 
-  await db.insert(posts).values({
-    familyId: currentUser.familyId,
-    authorId: currentUser.id,
-    content: parsed.data.content,
-    visibility: parsed.data.visibility,
-  })
+  const [post] = await db
+    .insert(posts)
+    .values({
+      familyId: currentUser.familyId,
+      authorId: currentUser.id,
+      content: parsed.data.content,
+      visibility: parsed.data.visibility,
+    })
+    .returning({ id: posts.id })
 
   revalidatePath('/wall')
-  return { success: 'Publication ajoutée.' }
+  return { success: 'Publication ajoutée.', postId: post.id }
 }
 
 export const createReplyAction = async (
@@ -217,9 +231,34 @@ export const deletePostAction = async (
     return { error: 'Tu ne peux pas supprimer cette publication.' }
   }
 
-  await db.delete(posts).where(eq(posts.id, targetPost.id))
+  const attachedPhotos = await db
+    .select({ storageKey: photos.storageKey })
+    .from(photos)
+    .where(
+      and(
+        eq(photos.postId, targetPost.id),
+        eq(photos.familyId, currentUser.familyId),
+      ),
+    )
+
+  await db.transaction(async (transaction) => {
+    await transaction
+      .delete(photos)
+      .where(
+        and(
+          eq(photos.postId, targetPost.id),
+          eq(photos.familyId, currentUser.familyId),
+        ),
+      )
+    await transaction.delete(posts).where(eq(posts.id, targetPost.id))
+  })
+
+  await Promise.allSettled(
+    attachedPhotos.map(({ storageKey }) => removeProcessedImage(storageKey)),
+  )
 
   revalidatePath('/wall')
+  revalidatePath('/photos')
   return { success: 'Publication supprimée.' }
 }
 

@@ -1,11 +1,15 @@
 import type { Metadata } from 'next'
 import { and, asc, desc, eq } from 'drizzle-orm'
+import { z } from 'zod'
+
 import { WallFeed, type WallPost } from '@/components/wall-feed'
 import { PageHeading } from '@/components/page-heading'
 import { db } from '@/db/client'
+import { photos } from '@/db/schema/photos'
 import { posts, replies } from '@/db/schema/wall'
 import type { AvatarTone } from '@/lib/demo-data'
 import { requireCurrentUser } from '@/lib/auth/session'
+import { serverEnvironment } from '@/lib/env'
 
 export const metadata: Metadata = { title: 'Le mur' }
 
@@ -21,35 +25,67 @@ const formatDate = (date: Date) => new Intl.DateTimeFormat('fr-FR', {
   timeZone: 'Europe/Paris',
 }).format(date)
 
-const WallPage = async () => {
-  const currentUser = await requireCurrentUser()
-  const visibilityCondition = currentUser.role === 'child'
-    ? and(eq(posts.familyId, currentUser.familyId), eq(posts.visibility, 'family'))
-    : eq(posts.familyId, currentUser.familyId)
-  const familyPosts = await db.query.posts.findMany({
-    where: visibilityCondition,
-    orderBy: [desc(posts.createdAt)],
-    limit: 50,
+const requestedPostIdSchema = z.string().uuid()
+const postRelations = {
+  author: {
+    columns: {
+      displayName: true as const,
+      avatarTone: true as const,
+    },
+  },
+  replies: {
+    orderBy: [asc(replies.createdAt)],
     with: {
       author: {
         columns: {
-          displayName: true,
-          avatarTone: true,
-        },
-      },
-      replies: {
-        orderBy: [asc(replies.createdAt)],
-        with: {
-          author: {
-            columns: {
-              displayName: true,
-              avatarTone: true,
-            },
-          },
+          displayName: true as const,
+          avatarTone: true as const,
         },
       },
     },
-  })
+  },
+  photos: {
+    orderBy: [asc(photos.createdAt)],
+  },
+}
+
+type WallPageProps = {
+  searchParams: Promise<{ post?: string | string[] }>
+}
+
+const WallPage = async ({ searchParams }: WallPageProps) => {
+  const currentUser = await requireCurrentUser()
+  const resolvedSearchParams = await searchParams
+  const rawRequestedPostId = Array.isArray(resolvedSearchParams.post)
+    ? resolvedSearchParams.post[0]
+    : resolvedSearchParams.post
+  const parsedRequestedPostId = requestedPostIdSchema.safeParse(rawRequestedPostId)
+  const requestedPostId = parsedRequestedPostId.success
+    ? parsedRequestedPostId.data
+    : null
+  const visibilityCondition = currentUser.role === 'child'
+    ? and(eq(posts.familyId, currentUser.familyId), eq(posts.visibility, 'family'))
+    : eq(posts.familyId, currentUser.familyId)
+  const [recentFamilyPosts, requestedPost] = await Promise.all([
+    db.query.posts.findMany({
+      where: visibilityCondition,
+      orderBy: [desc(posts.createdAt)],
+      limit: 50,
+      with: postRelations,
+    }),
+    requestedPostId
+      ? db.query.posts.findFirst({
+          where: and(
+            visibilityCondition,
+            eq(posts.id, requestedPostId),
+          ),
+          with: postRelations,
+        })
+      : Promise.resolve(undefined),
+  ])
+  const familyPosts = requestedPost && !recentFamilyPosts.some(({ id }) => id === requestedPost.id)
+    ? [...recentFamilyPosts, requestedPost]
+    : recentFamilyPosts
   const wallPosts: WallPost[] = familyPosts.map((post) => ({
     id: post.id,
     authorId: post.authorId,
@@ -58,6 +94,12 @@ const WallPage = async () => {
     content: post.content,
     time: formatDate(post.createdAt),
     adultsOnly: post.visibility === 'adults',
+    photos: post.photos.map((photo) => ({
+      id: photo.id,
+      displayUrl: `/media/${photo.id}/display`,
+      width: photo.width,
+      height: photo.height,
+    })),
     replies: post.replies.map((reply) => ({
       id: reply.id,
       authorId: reply.authorId,
@@ -80,6 +122,7 @@ const WallPage = async () => {
       <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,680px)_minmax(230px,290px)] lg:gap-12">
         <section aria-label="Fil familial" className="min-w-0">
           <WallFeed
+            maxUploadBytes={serverEnvironment.MAX_UPLOAD_BYTES}
             posts={wallPosts}
             currentUser={{
               id: currentUser.id,
