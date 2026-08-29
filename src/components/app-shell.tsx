@@ -1,12 +1,11 @@
 'use client'
 
 import { LogOut, Sparkles } from 'lucide-react'
-import { useState } from 'react'
 import { logoutAction } from '@/app/auth-actions'
 import { Avatar } from '@/components/avatar'
 import { DesktopNavigation, MobileNavigation } from '@/components/app-navigation'
-import { ThemeControls, type ThemeMode, type ThemePalette } from '@/components/theme-controls'
-import type { UserRole } from '@/db/schema/enums'
+import { ThemeControls } from '@/components/theme-controls'
+import type { ThemeMode, ThemePalette, UserRole } from '@/db/schema/enums'
 import type { AvatarTone } from '@/lib/demo-data'
 
 type AppShellUser = {
@@ -16,6 +15,8 @@ type AppShellUser = {
   role: UserRole
   avatarTone: AvatarTone
   hasAvatar: boolean
+  themeMode: ThemeMode
+  themePalette: ThemePalette
 }
 
 type AppShellProps = {
@@ -30,11 +31,8 @@ const roleLabels: Record<UserRole, string> = {
 }
 
 export const AppShell = ({ children, user }: AppShellProps) => {
-  const [mode, setMode] = useState<ThemeMode>('system')
-  const [palette, setPalette] = useState<ThemePalette>('violet')
-
   return (
-  <div data-mode={mode} data-palette={palette} className="theme-preview flex min-h-screen bg-background text-foreground">
+  <div className="flex min-h-screen bg-background text-foreground">
     <aside className="hidden w-[214px] shrink-0 flex-col border-r border-border bg-surface px-4 pb-6 pt-[30px] min-[821px]:flex min-[1101px]:w-[248px] min-[1101px]:px-[22px]">
       <div className="group flex items-center gap-2.5 font-display text-[17px] font-bold tracking-[-0.04em]">
         <span className="grid size-[30px] -rotate-[7deg] place-items-center rounded-[10px] bg-primary text-white transition-transform duration-300 group-hover:rotate-0 group-hover:scale-[1.08]">
@@ -90,10 +88,8 @@ export const AppShell = ({ children, user }: AppShellProps) => {
         </div>
         <div className="flex items-center gap-[23px]">
           <ThemeControls
-            mode={mode}
-            palette={palette}
-            onModeChange={setMode}
-            onPaletteChange={setPalette}
+            mode={user.themeMode}
+            palette={user.themePalette}
           />
           <form action={logoutAction} className="min-[821px]:hidden">
             <button

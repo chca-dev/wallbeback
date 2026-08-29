@@ -25,6 +25,8 @@ const PrivateLayout = async ({ children }: { children: React.ReactNode }) => {
         role: currentUser.role,
         avatarTone: getAvatarTone(currentUser.avatarTone),
         hasAvatar: Boolean(currentUser.avatarStorageKey),
+        themeMode: currentUser.themeMode,
+        themePalette: currentUser.themePalette,
       }}
     >
       {children}

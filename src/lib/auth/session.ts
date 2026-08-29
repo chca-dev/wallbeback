@@ -5,7 +5,7 @@ import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { cache } from 'react'
 import { db } from '@/db/client'
-import type { UserRole } from '@/db/schema/enums'
+import type { ThemeMode, ThemePalette, UserRole } from '@/db/schema/enums'
 import { families } from '@/db/schema/families'
 import { sessions } from '@/db/schema/sessions'
 import { users } from '@/db/schema/users'
@@ -25,6 +25,8 @@ export type CurrentUser = {
   role: UserRole
   avatarTone: string
   avatarStorageKey: string | null
+  themeMode: ThemeMode
+  themePalette: ThemePalette
   mustChangePassword: boolean
 }
 
@@ -54,6 +56,8 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
       role: users.role,
       avatarTone: users.avatarTone,
       avatarStorageKey: users.avatarStorageKey,
+      themeMode: users.themeMode,
+      themePalette: users.themePalette,
       mustChangePassword: users.mustChangePassword,
     })
     .from(sessions)

@@ -47,7 +47,7 @@
   color-scheme: light;
 }
 
-.theme-preview[data-palette="terracotta"] {
+html[data-palette="terracotta"] {
   --app-primary: #c86e51;
   --app-primary-strong: #a8543b;
   --app-primary-soft: #f2d8cd;
@@ -55,7 +55,7 @@
   --app-secondary-soft: #f4dfe5;
 }
 
-.theme-preview[data-palette="ocean"] {
+html[data-palette="ocean"] {
   --app-primary: #287f98;
   --app-primary-strong: #17677d;
   --app-primary-soft: #d3e9ee;
@@ -63,7 +63,7 @@
   --app-secondary-soft: #f5dce3;
 }
 
-.theme-preview[data-mode="dark"] {
+html[data-mode="dark"] {
   --app-background: #15141a;
   --app-surface: #1e1d26;
   --app-surface-soft: #2a2839;
@@ -84,7 +84,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  .theme-preview[data-mode="system"] {
+  html[data-mode="system"] {
     --app-background: #15141a;
     --app-surface: #1e1d26;
     --app-surface-soft: #2a2839;

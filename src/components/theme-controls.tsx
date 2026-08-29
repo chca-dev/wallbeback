@@ -1,16 +1,13 @@
 'use client'
 
 import { Moon, Palette, Sun } from 'lucide-react'
-import { useState } from 'react'
-
-export type ThemeMode = 'light' | 'dark' | 'system'
-export type ThemePalette = 'violet' | 'terracotta' | 'ocean'
+import { useState, useTransition } from 'react'
+import { saveThemeAction } from '@/app/(app)/theme-actions'
+import type { ThemeMode, ThemePalette } from '@/db/schema/enums'
 
 type ThemeControlsProps = {
   mode: ThemeMode
   palette: ThemePalette
-  onModeChange: (mode: ThemeMode) => void
-  onPaletteChange: (palette: ThemePalette) => void
 }
 
 const palettes: { id: ThemePalette; color: string; label: string }[] = [
@@ -19,8 +16,19 @@ const palettes: { id: ThemePalette; color: string; label: string }[] = [
   { id: 'ocean', color: '#287f98', label: 'Océan' },
 ]
 
-export const ThemeControls = ({ mode, palette, onModeChange, onPaletteChange }: ThemeControlsProps) => {
+export const ThemeControls = ({ mode: initialMode, palette: initialPalette }: ThemeControlsProps) => {
   const [open, setOpen] = useState(false)
+  const [mode, setMode] = useState(initialMode)
+  const [palette, setPalette] = useState(initialPalette)
+  const [, startTransition] = useTransition()
+
+  const applyTheme = (nextMode: ThemeMode, nextPalette: ThemePalette) => {
+    document.documentElement.dataset.mode = nextMode
+    document.documentElement.dataset.palette = nextPalette
+    setMode(nextMode)
+    setPalette(nextPalette)
+    startTransition(() => { void saveThemeAction(nextMode, nextPalette) })
+  }
 
   return (
     <div className="relative">
@@ -43,7 +51,7 @@ export const ThemeControls = ({ mode, palette, onModeChange, onPaletteChange }: 
                 key={item}
                 type="button"
                 aria-pressed={mode === item}
-                onClick={() => onModeChange(item)}
+                onClick={() => applyTheme(item, palette)}
                 className={`flex flex-col items-center gap-1 rounded-control border px-2 py-2 text-[10px] font-semibold transition ${
                   mode === item ? 'border-primary bg-primary-soft text-primary-strong' : 'border-border text-muted hover:bg-surface-soft'
                 }`}
@@ -62,7 +70,7 @@ export const ThemeControls = ({ mode, palette, onModeChange, onPaletteChange }: 
                 type="button"
                 aria-label={item.label}
                 aria-pressed={palette === item.id}
-                onClick={() => onPaletteChange(item.id)}
+                onClick={() => applyTheme(mode, item.id)}
                 className={`size-9 rounded-full border-4 transition hover:scale-105 ${palette === item.id ? 'border-foreground' : 'border-surface'}`}
                 style={{ backgroundColor: item.color }}
               />
