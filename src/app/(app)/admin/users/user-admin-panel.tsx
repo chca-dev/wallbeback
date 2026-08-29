@@ -4,7 +4,7 @@ import { KeyRound, Power, Save, UserPlus } from 'lucide-react'
 import { useActionState } from 'react'
 import { Avatar } from '@/components/avatar'
 import type { UserRole } from '@/db/schema/enums'
-import type { AvatarTone } from '@/lib/demo-data'
+import type { AvatarTone } from '@/lib/avatar'
 import {
   createUserAction,
   resetUserPasswordAction,

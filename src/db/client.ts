@@ -47,7 +47,7 @@ type DatabaseGlobal = typeof globalThis & {
 
 const databaseGlobal = globalThis as DatabaseGlobal
 
-export const databaseClient = databaseGlobal.wallBeBackDatabaseClient ?? postgres(
+const databaseClient = databaseGlobal.wallBeBackDatabaseClient ?? postgres(
   serverEnvironment.DATABASE_URL,
   {
     max: process.env.NODE_ENV === 'production' ? 10 : 1,

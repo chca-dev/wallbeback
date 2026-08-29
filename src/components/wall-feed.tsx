@@ -25,7 +25,7 @@ import {
   type WallActionState,
 } from '@/app/(app)/wall/actions'
 import { Avatar } from '@/components/avatar'
-import type { AvatarTone } from '@/lib/demo-data'
+import type { AvatarTone } from '@/lib/avatar'
 
 export type WallReply = {
   id: string

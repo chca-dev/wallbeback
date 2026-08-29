@@ -7,7 +7,7 @@ import { Avatar } from '@/components/avatar'
 import { DesktopNavigation, MobileNavigation } from '@/components/app-navigation'
 import { ThemeControls } from '@/components/theme-controls'
 import type { ThemeMode, ThemePalette, UserRole } from '@/db/schema/enums'
-import type { AvatarTone } from '@/lib/demo-data'
+import type { AvatarTone } from '@/lib/avatar'
 
 type AppShellUser = {
   id: string

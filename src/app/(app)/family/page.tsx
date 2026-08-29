@@ -8,7 +8,7 @@ import { db } from '@/db/client'
 import { photoPeople } from '@/db/schema/photos'
 import { users } from '@/db/schema/users'
 import { requireCurrentUser } from '@/lib/auth/session'
-import type { AvatarTone } from '@/lib/demo-data'
+import type { AvatarTone } from '@/lib/avatar'
 import { getBannerKing } from '@/lib/banner-rotation'
 
 export const metadata: Metadata = { title: 'Famille' }
@@ -26,7 +26,6 @@ const FamilyPage = async () => {
 			.select({
 				id: users.id,
 				displayName: users.displayName,
-				role: users.role,
 				avatarTone: users.avatarTone,
 				avatarStorageKey: users.avatarStorageKey,
 				createdAt: users.createdAt,

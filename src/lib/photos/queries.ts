@@ -5,7 +5,7 @@ import type { UserRole } from '@/db/schema/enums'
 import { photoPeople, photos } from '@/db/schema/photos'
 import { users } from '@/db/schema/users'
 import { posts } from '@/db/schema/wall'
-import type { AvatarTone } from '@/lib/demo-data'
+import type { AvatarTone } from '@/lib/avatar'
 
 export type PhotoGalleryMember = {
   id: string

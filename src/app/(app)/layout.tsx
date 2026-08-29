@@ -1,5 +1,5 @@
 import { AppShell } from '@/components/app-shell'
-import type { AvatarTone } from '@/lib/demo-data'
+import type { AvatarTone } from '@/lib/avatar'
 import { requireCurrentUser } from '@/lib/auth/session'
 import { redirect } from 'next/navigation'
 

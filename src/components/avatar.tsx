@@ -1,5 +1,5 @@
 import Image from 'next/image'
-import type { AvatarTone } from '@/lib/demo-data'
+import type { AvatarTone } from '@/lib/avatar'
 
 const tones: Record<AvatarTone, string> = {
   blue: 'bg-[var(--app-avatar-blue)]',

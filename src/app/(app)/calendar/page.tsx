@@ -43,7 +43,7 @@ const CalendarPage = async ({ searchParams }: CalendarPageProps) => {
         member: { columns: { displayName: true, avatarTone: true } },
       },
     }),
-    db.select({ id: users.id, displayName: users.displayName, avatarTone: users.avatarTone })
+    db.select({ id: users.id, displayName: users.displayName })
       .from(users)
       .where(and(eq(users.familyId, currentUser.familyId), eq(users.isActive, true)))
       .orderBy(asc(users.displayName)),

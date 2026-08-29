@@ -37,12 +37,10 @@ export type ProcessedImage = {
 
 export type ProcessedAvatar = {
   data: Buffer
-  byteSize: number
 }
 
 export type ProcessedBanner = {
   data: Buffer
-  byteSize: number
 }
 
 export type CropSelection = { x: number, y: number, width: number, height: number }
@@ -187,7 +185,7 @@ export const processAvatarImage = async (input: Buffer, crop?: CropSelection): P
     .webp({ quality: 68 })
     .toBuffer()
 
-  return { data, byteSize: data.length }
+  return { data }
 }
 
 export const processBannerImage = async (input: Buffer, crop?: CropSelection): Promise<ProcessedBanner> => {
@@ -198,5 +196,5 @@ export const processBannerImage = async (input: Buffer, crop?: CropSelection): P
     .webp({ quality: 78 })
     .toBuffer()
 
-  return { data, byteSize: data.length }
+  return { data }
 }

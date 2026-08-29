@@ -10,7 +10,7 @@ import type { UserRole } from '@/db/schema/enums'
 import { events } from '@/db/schema/events'
 import { users } from '@/db/schema/users'
 import { requireCurrentUser } from '@/lib/auth/session'
-import type { AvatarTone } from '@/lib/demo-data'
+import type { AvatarTone } from '@/lib/avatar'
 
 export const metadata: Metadata = { title: 'Membre de la famille' }
 type MemberPageProps = { params: Promise<{ id: string }> }

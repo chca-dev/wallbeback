@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { createEventAction, deleteEventAction, updateEventAction, type CalendarActionState } from '@/app/(app)/calendar/actions'
 import { Avatar } from '@/components/avatar'
 import type { CalendarEventType } from '@/db/schema/enums'
-import type { AvatarTone } from '@/lib/demo-data'
+import type { AvatarTone } from '@/lib/avatar'
 
 export type CalendarEventView = {
   id: string
@@ -25,7 +25,7 @@ export type CalendarEventView = {
   repeatsYearly: boolean
 }
 
-export type CalendarMember = { id: string, displayName: string, avatarTone: string }
+export type CalendarMember = { id: string, displayName: string }
 type CalendarProps = { currentUserId: string, isAdmin: boolean, month: string, today: string, events: CalendarEventView[], members: CalendarMember[] }
 
 const weekdays = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
