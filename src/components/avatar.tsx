@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import type { AvatarTone } from '@/lib/demo-data'
 
 const tones: Record<AvatarTone, string> = {
@@ -11,6 +12,7 @@ type AvatarProps = {
   name: string
   tone?: AvatarTone
   size?: 'xs' | 'sm' | 'md' | 'lg'
+  imageUrl?: string | null
 }
 
 const sizes = {
@@ -20,7 +22,7 @@ const sizes = {
   lg: 'size-11 text-xs',
 }
 
-export const Avatar = ({ name, tone = 'blue', size = 'md' }: AvatarProps) => {
+export const Avatar = ({ name, tone = 'blue', size = 'md', imageUrl }: AvatarProps) => {
   const initials = name
     .split(' ')
     .map((part) => part[0])
@@ -31,9 +33,9 @@ export const Avatar = ({ name, tone = 'blue', size = 'md' }: AvatarProps) => {
   return (
     <span
       aria-label={name}
-      className={`inline-grid shrink-0 place-items-center rounded-full font-extrabold tracking-[-0.03em] text-white ${tones[tone]} ${sizes[size]}`}
+      className={`relative inline-grid shrink-0 place-items-center overflow-hidden rounded-full font-extrabold tracking-[-0.03em] text-white ${tones[tone]} ${sizes[size]}`}
     >
-      {initials}
+      {imageUrl ? <Image src={imageUrl} alt='' fill unoptimized sizes='44px' className='object-cover' /> : initials}
     </span>
   )
 }

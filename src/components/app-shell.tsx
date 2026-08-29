@@ -10,10 +10,12 @@ import type { UserRole } from '@/db/schema/enums'
 import type { AvatarTone } from '@/lib/demo-data'
 
 type AppShellUser = {
+  id: string
   displayName: string
   familyName: string
   role: UserRole
   avatarTone: AvatarTone
+  hasAvatar: boolean
 }
 
 type AppShellProps = {
@@ -60,7 +62,7 @@ export const AppShell = ({ children, user }: AppShellProps) => {
           </p>
         </div>
         <div className="mt-5 flex items-center gap-2.5 rounded-[10px] px-2.5 py-2">
-          <Avatar name={user.displayName} tone={user.avatarTone} />
+          <Avatar name={user.displayName} tone={user.avatarTone} imageUrl={user.hasAvatar ? `/avatar/${user.id}` : null} />
           <span className="min-w-0 flex-1 truncate text-[13px] font-semibold">{user.displayName}</span>
           <span className="rounded-full bg-primary-soft px-2 py-0.5 text-[9px] font-bold text-primary-strong">
             {roleLabels[user.role]}
@@ -103,7 +105,7 @@ export const AppShell = ({ children, user }: AppShellProps) => {
             </button>
           </form>
           <div className="flex items-center gap-2 rounded-[22px] py-[5px] pl-[5px] pr-2.5 transition-colors duration-200 hover:bg-surface-soft">
-            <Avatar name={user.displayName} tone={user.avatarTone} size="sm" />
+            <Avatar name={user.displayName} tone={user.avatarTone} imageUrl={user.hasAvatar ? `/avatar/${user.id}` : null} size="sm" />
             <span className="hidden max-w-32 truncate text-xs font-bold min-[821px]:block">{user.displayName}</span>
           </div>
         </div>

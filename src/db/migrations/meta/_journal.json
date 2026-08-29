@@ -15,6 +15,13 @@
       "when": 1787992688659,
       "tag": "0001_little_namora",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788025423914,
+      "tag": "0002_dusty_hairball",
+      "breakpoints": true
     }
   ]
 }

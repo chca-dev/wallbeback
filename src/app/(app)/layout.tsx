@@ -19,10 +19,12 @@ const PrivateLayout = async ({ children }: { children: React.ReactNode }) => {
   return (
     <AppShell
       user={{
+        id: currentUser.id,
         displayName: currentUser.displayName,
         familyName: currentUser.familyName,
         role: currentUser.role,
         avatarTone: getAvatarTone(currentUser.avatarTone),
+        hasAvatar: Boolean(currentUser.avatarStorageKey),
       }}
     >
       {children}

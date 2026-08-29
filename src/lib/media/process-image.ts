@@ -35,6 +35,11 @@ export type ProcessedImage = {
   height: number
 }
 
+export type ProcessedAvatar = {
+  data: Buffer
+  byteSize: number
+}
+
 const createMediaProcessingError = (
   code: MediaProcessingErrorCode,
   message: string,
@@ -155,3 +160,13 @@ const processImageImmediately = async (input: Buffer): Promise<ProcessedImage> =
 export const processImage = (input: Buffer): Promise<ProcessedImage> => enqueueImageProcessing(
   () => processImageImmediately(input),
 )
+
+export const processAvatarImage = async (input: Buffer): Promise<ProcessedAvatar> => {
+  const processedImage = await processImage(input)
+  const data = await sharp(processedImage.thumb, { failOn: 'warning' })
+    .resize({ width: 256, height: 256, fit: 'cover', position: 'centre' })
+    .webp({ quality: 68 })
+    .toBuffer()
+
+  return { data, byteSize: data.length }
+}

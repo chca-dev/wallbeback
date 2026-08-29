@@ -31,6 +31,7 @@ const postRelations = {
     columns: {
       displayName: true as const,
       avatarTone: true as const,
+      avatarStorageKey: true as const,
     },
   },
   replies: {
@@ -40,6 +41,7 @@ const postRelations = {
         columns: {
           displayName: true as const,
           avatarTone: true as const,
+          avatarStorageKey: true as const,
         },
       },
     },
@@ -91,6 +93,7 @@ const WallPage = async ({ searchParams }: WallPageProps) => {
     authorId: post.authorId,
     author: post.author.displayName,
     tone: getAvatarTone(post.author.avatarTone),
+    avatarUrl: post.author.avatarStorageKey ? `/avatar/${post.authorId}` : null,
     content: post.content,
     time: formatDate(post.createdAt),
     adultsOnly: post.visibility === 'adults',
@@ -105,6 +108,7 @@ const WallPage = async ({ searchParams }: WallPageProps) => {
       authorId: reply.authorId,
       author: reply.author.displayName,
       tone: getAvatarTone(reply.author.avatarTone),
+      avatarUrl: reply.author.avatarStorageKey ? `/avatar/${reply.authorId}` : null,
       content: reply.content,
       time: formatDate(reply.createdAt),
     })),
@@ -129,6 +133,7 @@ const WallPage = async ({ searchParams }: WallPageProps) => {
               displayName: currentUser.displayName,
               familyName: currentUser.familyName,
               avatarTone: getAvatarTone(currentUser.avatarTone),
+              avatarUrl: currentUser.avatarStorageKey ? `/avatar/${currentUser.id}` : null,
               isAdmin: currentUser.role === 'admin',
               canPublishAdults: currentUser.role !== 'child',
             }}

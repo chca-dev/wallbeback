@@ -1,10 +1,10 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { and, count, eq } from 'drizzle-orm'
 import { Camera, CalendarDays } from 'lucide-react'
 import { Avatar } from '@/components/avatar'
 import { PageHeading } from '@/components/page-heading'
 import { db } from '@/db/client'
-import type { UserRole } from '@/db/schema/enums'
 import { photoPeople } from '@/db/schema/photos'
 import { users } from '@/db/schema/users'
 import { requireCurrentUser } from '@/lib/auth/session'
@@ -13,12 +13,6 @@ import type { AvatarTone } from '@/lib/demo-data'
 export const metadata: Metadata = { title: 'Famille' }
 
 const avatarTones: AvatarTone[] = ['blue', 'pink', 'cyan', 'lavender']
-
-const roleLabels: Record<UserRole, string> = {
-	admin: 'Admin',
-	adult: 'Adulte',
-	child: 'Enfant',
-}
 
 const getAvatarTone = (tone: string): AvatarTone => (
 	avatarTones.includes(tone as AvatarTone) ? tone as AvatarTone : 'blue'
@@ -33,6 +27,7 @@ const FamilyPage = async () => {
 				displayName: users.displayName,
 				role: users.role,
 				avatarTone: users.avatarTone,
+				avatarStorageKey: users.avatarStorageKey,
 			})
 			.from(users)
 			.where(and(eq(users.familyId, currentUser.familyId), eq(users.isActive, true)))
@@ -58,17 +53,18 @@ const FamilyPage = async () => {
 				className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3"
 			>
 				{familyUsers.map((member) => (
-					<article
+					<Link
 						key={member.id}
+						href={`/family/${member.id}`}
 						className="group rounded-card border border-border bg-surface p-5 transition hover:-translate-y-0.5 hover:border-primary-soft"
 					>
 						<div className="flex items-center gap-4">
-							<Avatar name={member.displayName} tone={getAvatarTone(member.avatarTone)} size="lg" />
+							<Avatar name={member.displayName} tone={getAvatarTone(member.avatarTone)} imageUrl={member.avatarStorageKey ? `/avatar/${member.id}` : null} size="lg" />
 							<div className="min-w-0">
 								<h2 className="truncate font-display text-base font-semibold">
 									{member.displayName}
 								</h2>
-								<p className="text-xs text-muted">{roleLabels[member.role]}</p>
+								<p className="text-xs text-muted">Voir la fiche</p>
 							</div>
 						</div>
 						<div className="mt-5 flex gap-4 border-t border-border pt-4 text-[11px] font-semibold text-muted">
@@ -79,7 +75,7 @@ const FamilyPage = async () => {
 								<CalendarDays size={14} /> À jour
 							</span>
 						</div>
-					</article>
+					</Link>
 				))}
 			</section>
 		</div>

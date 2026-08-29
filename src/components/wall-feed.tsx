@@ -32,6 +32,7 @@ export type WallReply = {
   authorId: string
   author: string
   tone: AvatarTone
+  avatarUrl: string | null
   content: string
   time: string
 }
@@ -41,6 +42,7 @@ export type WallPost = {
   authorId: string
   author: string
   tone: AvatarTone
+  avatarUrl: string | null
   content: string
   time: string
   adultsOnly?: boolean
@@ -61,6 +63,7 @@ type WallFeedProps = {
     displayName: string
     familyName: string
     avatarTone: AvatarTone
+    avatarUrl: string | null
     isAdmin: boolean
     canPublishAdults: boolean
   }
@@ -121,7 +124,7 @@ const ReplyForm = ({ postId, currentUser, onClose }: {
     <form action={formAction} className="mt-[14px] pl-[30px]">
       <input type="hidden" name="postId" value={postId} />
       <div className="flex items-center gap-2.5">
-        <Avatar name={currentUser.displayName} tone={currentUser.avatarTone} size="sm" />
+        <Avatar name={currentUser.displayName} tone={currentUser.avatarTone} imageUrl={currentUser.avatarUrl} size="sm" />
         <input
           autoFocus
           name="content"
@@ -164,7 +167,7 @@ const ReplyItem = ({ reply, currentUser }: {
 
   return (
     <div className="flex items-start gap-2.5">
-      <Avatar name={reply.author} tone={reply.tone} size="sm" />
+      <Avatar name={reply.author} tone={reply.tone} imageUrl={reply.avatarUrl} size="sm" />
       <div className="min-w-0 flex-1 rounded-[4px_14px_14px_14px] bg-surface-soft px-3.5 py-2.5">
         <div className="flex items-center gap-2">
           <strong className="block min-w-0 flex-1 truncate text-xs">{reply.author}</strong>
@@ -244,7 +247,7 @@ const PostCard = ({ post, currentUser }: { post: WallPost, currentUser: WallFeed
   return (
     <article id={`post-${post.id}`} className={`mb-10 scroll-mt-28 border-b border-border pb-[38px] ${post.adultsOnly ? 'border-l-[3px] border-l-secondary pl-4' : ''}`}>
       <header className="flex items-center gap-[13px]">
-        <Avatar name={post.author} tone={post.tone} size="lg" />
+      <Avatar name={post.author} tone={post.tone} imageUrl={post.avatarUrl} size="lg" />
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <strong className="text-sm">{post.author}</strong>
@@ -587,7 +590,7 @@ export const WallFeed = ({
           onChange={selectPhotos}
         />
         <div className='mb-[14px] flex items-center gap-[11px]'>
-          <Avatar name={currentUser.displayName} tone={currentUser.avatarTone} />
+          <Avatar name={currentUser.displayName} tone={currentUser.avatarTone} imageUrl={currentUser.avatarUrl} />
           <div>
             <strong className='block text-sm'>{currentUser.displayName}</strong>
             <span className='text-[11px] text-muted'>

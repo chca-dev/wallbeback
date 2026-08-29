@@ -24,6 +24,7 @@ export type CurrentUser = {
   displayName: string
   role: UserRole
   avatarTone: string
+  avatarStorageKey: string | null
   mustChangePassword: boolean
 }
 
@@ -52,6 +53,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
       displayName: users.displayName,
       role: users.role,
       avatarTone: users.avatarTone,
+      avatarStorageKey: users.avatarStorageKey,
       mustChangePassword: users.mustChangePassword,
     })
     .from(sessions)

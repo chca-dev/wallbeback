@@ -27,6 +27,7 @@ export const users = pgTable(
     displayName: varchar('display_name', { length: 120 }).notNull(),
     role: userRole('role').default('adult').notNull(),
     avatarTone: varchar('avatar_tone', { length: 32 }).default('blue').notNull(),
+    avatarStorageKey: text('avatar_storage_key'),
     isActive: boolean('is_active').default(true).notNull(),
     mustChangePassword: boolean('must_change_password').default(true).notNull(),
     themeMode: themeMode('theme_mode').default('system').notNull(),
