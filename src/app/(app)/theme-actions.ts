@@ -7,16 +7,17 @@ import { db } from '@/db/client'
 import { themeModeValues, themePaletteValues } from '@/db/schema/enums'
 import { users } from '@/db/schema/users'
 import { requireCurrentUser } from '@/lib/auth/session'
+import type { ActionResult } from '@/lib/action-result'
 
 const themeSchema = z.object({
   mode: z.enum(themeModeValues),
   palette: z.enum(themePaletteValues),
 })
 
-export const saveThemeAction = async (mode: string, palette: string) => {
+export const saveThemeAction = async (mode: string, palette: string): Promise<ActionResult> => {
   const currentUser = await requireCurrentUser()
   const parsed = themeSchema.safeParse({ mode, palette })
-  if (!parsed.success) return { success: false as const, error: 'Thème invalide.' }
+  if (!parsed.success) return { success: false, error: 'Thème invalide.' }
 
   await db.update(users).set({ themeMode: parsed.data.mode, themePalette: parsed.data.palette }).where(eq(users.id, currentUser.id))
   const cookieStore = await cookies()
@@ -27,5 +28,5 @@ export const saveThemeAction = async (mode: string, palette: string) => {
     path: '/',
     maxAge: 365 * 24 * 60 * 60,
   })
-  return { success: true as const }
+  return { success: true }
 }

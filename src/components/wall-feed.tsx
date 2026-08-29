@@ -80,7 +80,7 @@ const Feedback = ({
 }) => {
   const message = state.error
     ?? state.fieldErrors?.content?.[0]
-    ?? (hideSuccess ? undefined : state.success)
+    ?? (hideSuccess ? undefined : state.message)
 
   if (!message) {
     return null

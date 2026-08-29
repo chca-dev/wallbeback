@@ -52,7 +52,7 @@ export const MemberProfileForm = ({ displayName, avatarTone, hasAvatar }: Member
       {avatarMode === 'initials' ? <fieldset className='mt-4'><legend className='sr-only'>Couleur de l’avatar</legend><div className='flex flex-wrap gap-2'>{tones.map((tone) => <label key={tone.value} className='cursor-pointer'><input className='peer sr-only' type='radio' name='avatarTone' value={tone.value} defaultChecked={avatarTone === tone.value} aria-label={tone.label} /><span className={`block size-9 rounded-full border-2 border-transparent peer-checked:border-foreground ${tone.color}`} /></label>)}</div></fieldset> : <input type='hidden' name='avatarTone' value={avatarTone} />}
       {avatarError ? <p className='mt-3 text-xs text-danger'>{avatarError}</p> : null}
       {state.error ? <p className='mt-3 text-xs text-danger'>{state.error}</p> : null}
-      {state.success ? <p className='mt-3 text-xs text-success'>{state.success}</p> : null}
+      {state.message ? <p className='mt-3 text-xs text-success'>{state.message}</p> : null}
       <button disabled={pending} className='mt-4 rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-white disabled:opacity-50'>{pending ? 'Enregistrement…' : 'Enregistrer'}</button>
       {cropFile ? <ImageCropDialog file={cropFile} aspect={1} title='Cadrer l’avatar' onCancel={() => setCropFile(null)} onConfirm={(crop) => { const file = cropFile; setCropFile(null); void uploadAvatar(file, crop) }} /> : null}
     </form>

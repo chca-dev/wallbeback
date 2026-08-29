@@ -45,7 +45,7 @@ const getAvatarTone = (tone: string): AvatarTone => (
 )
 
 const Feedback = ({ state }: { state: UserActionState }) => {
-  const message = state.error ?? state.success
+  const message = state.error ?? state.message
 
   if (!message) {
     return null

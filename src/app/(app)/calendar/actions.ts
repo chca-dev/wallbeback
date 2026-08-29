@@ -8,11 +8,9 @@ import { calendarEventTypeValues } from '@/db/schema/enums'
 import { events } from '@/db/schema/events'
 import { users } from '@/db/schema/users'
 import { requireCurrentUser } from '@/lib/auth/session'
+import type { ActionResult } from '@/lib/action-result'
 
-export type CalendarActionState = {
-  success?: string
-  error?: string
-}
+export type CalendarActionState = ActionResult
 
 const eventSchema = z.object({
   eventId: z.string().uuid().optional(),
@@ -120,7 +118,7 @@ export const createEventAction = async (
   })
 
   revalidatePath('/calendar')
-  return { success: 'Événement ajouté.' }
+  return { success: true, message: 'Événement ajouté.' }
 }
 
 export const updateEventAction = async (
@@ -155,7 +153,7 @@ export const updateEventAction = async (
   }).where(and(eq(events.id, target.id), eq(events.familyId, currentUser.familyId)))
 
   revalidatePath('/calendar')
-  return { success: 'Événement modifié.' }
+  return { success: true, message: 'Événement modifié.' }
 }
 
 export const deleteEventAction = async (
@@ -172,5 +170,5 @@ export const deleteEventAction = async (
 
   await db.delete(events).where(and(eq(events.id, target.id), eq(events.familyId, currentUser.familyId)))
   revalidatePath('/calendar')
-  return { success: 'Événement supprimé.' }
+  return { success: true, message: 'Événement supprimé.' }
 }

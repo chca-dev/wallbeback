@@ -12,6 +12,7 @@ import {
   requireCurrentUser,
   revokeCurrentSession,
 } from '@/lib/auth/session'
+import type { ActionResult } from '@/lib/action-result'
 
 const maximumLoginAttempts = 5
 const loginLockMilliseconds = 15 * 60 * 1000
@@ -34,15 +35,9 @@ const changePasswordSchema = z
 type LoginField = 'identity' | 'password'
 type ChangePasswordField = 'password' | 'confirmation'
 
-export type LoginActionState = {
-  error?: string
-  fieldErrors?: Partial<Record<LoginField, string[]>>
-}
+export type LoginActionState = ActionResult<LoginField>
 
-export type ChangePasswordActionState = {
-  error?: string
-  fieldErrors?: Partial<Record<ChangePasswordField, string[]>>
-}
+export type ChangePasswordActionState = ActionResult<ChangePasswordField>
 
 const getFieldErrors = <Field extends string>(error: z.ZodError) => {
   const fieldErrors: Partial<Record<Field, string[]>> = {}

@@ -1,16 +1,20 @@
 import { eq } from 'drizzle-orm'
 import { NextResponse } from 'next/server'
+import { z } from 'zod'
 import { db } from '@/db/client'
 import { users } from '@/db/schema/users'
 import { getCurrentUser } from '@/lib/auth/session'
 import { readAvatarImage } from '@/lib/media/storage'
 
 type AvatarRouteProps = { params: Promise<{ id: string }> }
+const memberIdSchema = z.string().uuid()
 
 export const GET = async (_request: Request, { params }: AvatarRouteProps) => {
   const currentUser = await getCurrentUser()
   if (!currentUser) return new NextResponse(null, { status: 401 })
-  const { id } = await params
+  const parsedId = memberIdSchema.safeParse((await params).id)
+  if (!parsedId.success) return new NextResponse(null, { status: 404 })
+  const id = parsedId.data
   const member = await db.query.users.findFirst({ where: eq(users.id, id), columns: { familyId: true, avatarStorageKey: true } })
   if (!member || member.familyId !== currentUser.familyId || !member.avatarStorageKey) return new NextResponse(null, { status: 404 })
   try {

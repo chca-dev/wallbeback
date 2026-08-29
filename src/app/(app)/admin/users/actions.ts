@@ -9,6 +9,7 @@ import { userRoleValues } from '@/db/schema/enums'
 import { sessions } from '@/db/schema/sessions'
 import { users } from '@/db/schema/users'
 import { requireAdmin } from '@/lib/auth/session'
+import type { ActionResult } from '@/lib/action-result'
 
 const avatarToneValues = ['blue', 'pink', 'cyan', 'lavender'] as const
 
@@ -39,11 +40,7 @@ const userIdSchema = z.object({ userId: z.string().uuid() })
 
 type UserField = 'displayName' | 'username' | 'email' | 'role' | 'avatarTone' | 'temporaryPassword'
 
-export type UserActionState = {
-  success?: string
-  error?: string
-  fieldErrors?: Partial<Record<UserField, string[]>>
-}
+export type UserActionState = ActionResult<UserField>
 
 const getFieldErrors = (error: z.ZodError) => {
   const fieldErrors: UserActionState['fieldErrors'] = {}
@@ -145,7 +142,7 @@ export const createUserAction = async (
   })
 
   revalidateUserViews()
-  return { success: `Compte de ${parsed.data.displayName} créé.` }
+  return { success: true, message: `Compte de ${parsed.data.displayName} créé.` }
 }
 
 export const updateUserAction = async (
@@ -221,7 +218,7 @@ export const updateUserAction = async (
   })
 
   revalidateUserViews()
-  return { success: 'Profil mis à jour.' }
+  return { success: true, message: 'Profil mis à jour.' }
 }
 
 export const toggleUserStatusAction = async (
@@ -280,7 +277,8 @@ export const toggleUserStatusAction = async (
 
   revalidateUserViews()
   return {
-    success: target.isActive
+    success: true,
+    message: target.isActive
       ? `Compte de ${target.displayName} désactivé.`
       : `Compte de ${target.displayName} réactivé.`,
   }
@@ -336,5 +334,5 @@ export const resetUserPasswordAction = async (
   })
 
   revalidateUserViews()
-  return { success: `Mot de passe temporaire défini pour ${target.displayName}.` }
+  return { success: true, message: `Mot de passe temporaire défini pour ${target.displayName}.` }
 }

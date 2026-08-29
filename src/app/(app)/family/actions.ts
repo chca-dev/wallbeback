@@ -6,8 +6,9 @@ import { z } from 'zod'
 import { db } from '@/db/client'
 import { users } from '@/db/schema/users'
 import { requireCurrentUser } from '@/lib/auth/session'
+import type { ActionResult } from '@/lib/action-result'
 
-export type MemberProfileActionState = { success?: string, error?: string }
+export type MemberProfileActionState = ActionResult
 
 const profileSchema = z.object({
   displayName: z.string().trim().min(1, 'Ajoute un nom.').max(120, 'Le nom est trop long.'),
@@ -33,5 +34,5 @@ export const updateMemberProfileAction = async (
 
   revalidatePath('/family')
   revalidatePath(`/family/${currentUser.id}`)
-  return { success: 'Profil mis à jour.' }
+  return { success: true, message: 'Profil mis à jour.' }
 }

@@ -1,7 +1,7 @@
 'use client'
 
 import { Moon, Palette, Sun } from 'lucide-react'
-import { useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { saveThemeAction } from '@/app/(app)/theme-actions'
 import type { ThemeMode, ThemePalette } from '@/db/schema/enums'
 
@@ -22,9 +22,12 @@ export const ThemeControls = ({ mode: initialMode, palette: initialPalette }: Th
   const [palette, setPalette] = useState(initialPalette)
   const [, startTransition] = useTransition()
 
+  useEffect(() => {
+    document.documentElement.dataset.mode = mode
+    document.documentElement.dataset.palette = palette
+  }, [mode, palette])
+
   const applyTheme = (nextMode: ThemeMode, nextPalette: ThemePalette) => {
-    document.documentElement.dataset.mode = nextMode
-    document.documentElement.dataset.palette = nextPalette
     setMode(nextMode)
     setPalette(nextPalette)
     startTransition(() => { void saveThemeAction(nextMode, nextPalette) })

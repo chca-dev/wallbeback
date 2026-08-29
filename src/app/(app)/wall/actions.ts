@@ -8,6 +8,7 @@ import { postVisibilityValues } from '@/db/schema/enums'
 import { photos } from '@/db/schema/photos'
 import { posts, replies } from '@/db/schema/wall'
 import { requireCurrentUser } from '@/lib/auth/session'
+import type { ActionResult } from '@/lib/action-result'
 import { removeProcessedImage } from '@/lib/media/storage'
 
 const contentSchema = z.string().trim().max(5000, 'Le message est trop long.')
@@ -42,13 +43,8 @@ const updateReplySchema = z.object({
 const postIdSchema = z.object({ postId: z.string().uuid() })
 const replyIdSchema = z.object({ replyId: z.string().uuid() })
 
-export type WallActionState = {
-  success?: string
-  error?: string
+export type WallActionState = ActionResult<'content'> & {
   postId?: string
-  fieldErrors?: {
-    content?: string[]
-  }
 }
 
 const getContentErrors = (error: z.ZodError): WallActionState => ({
@@ -128,7 +124,7 @@ export const createPostAction = async (
     .returning({ id: posts.id })
 
   revalidatePath('/wall')
-  return { success: 'Publication ajoutée.', postId: post.id }
+  return { success: true, message: 'Publication ajoutée.', postId: post.id }
 }
 
 export const createReplyAction = async (
@@ -174,7 +170,7 @@ export const createReplyAction = async (
   })
 
   revalidatePath('/wall')
-  return { success: 'Réponse ajoutée.' }
+  return { success: true, message: 'Réponse ajoutée.' }
 }
 
 export const updatePostAction = async (
@@ -207,7 +203,7 @@ export const updatePostAction = async (
     .where(eq(posts.id, targetPost.id))
 
   revalidatePath('/wall')
-  return { success: 'Publication modifiée.' }
+  return { success: true, message: 'Publication modifiée.' }
 }
 
 export const deletePostAction = async (
@@ -259,7 +255,7 @@ export const deletePostAction = async (
 
   revalidatePath('/wall')
   revalidatePath('/photos')
-  return { success: 'Publication supprimée.' }
+  return { success: true, message: 'Publication supprimée.' }
 }
 
 export const updateReplyAction = async (
@@ -292,7 +288,7 @@ export const updateReplyAction = async (
     .where(eq(replies.id, targetReply.id))
 
   revalidatePath('/wall')
-  return { success: 'Réponse modifiée.' }
+  return { success: true, message: 'Réponse modifiée.' }
 }
 
 export const deleteReplyAction = async (
@@ -319,5 +315,5 @@ export const deleteReplyAction = async (
   await db.delete(replies).where(eq(replies.id, targetReply.id))
 
   revalidatePath('/wall')
-  return { success: 'Réponse supprimée.' }
+  return { success: true, message: 'Réponse supprimée.' }
 }
