@@ -24,7 +24,9 @@ export const photos = pgTable(
     ownerId: uuid('owner_id')
       .notNull()
       .references(() => users.id, { onDelete: 'restrict' }),
-    postId: uuid('post_id').references(() => posts.id, { onDelete: 'set null' }),
+    postId: uuid('post_id')
+      .notNull()
+      .references(() => posts.id, { onDelete: 'cascade' }),
     storageKey: text('storage_key').notNull(),
     originalName: varchar('original_name', { length: 255 }).notNull(),
     mimeType: varchar('mime_type', { length: 64 }).notNull(),

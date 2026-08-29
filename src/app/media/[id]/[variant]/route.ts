@@ -1,4 +1,4 @@
-import { and, eq, isNull, or } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -42,10 +42,7 @@ export const GET = async (
     ? and(
         eq(photos.id, parsedParams.data.id),
         eq(photos.familyId, currentUser.familyId),
-        or(
-          isNull(photos.postId),
-          eq(posts.visibility, 'family'),
-        ),
+        eq(posts.visibility, 'family'),
       )
     : and(
         eq(photos.id, parsedParams.data.id),
@@ -55,7 +52,7 @@ export const GET = async (
   const [photo] = await db
     .select({ storageKey: photos.storageKey })
     .from(photos)
-    .leftJoin(
+    .innerJoin(
       posts,
       and(
         eq(posts.id, photos.postId),
