@@ -1,12 +1,12 @@
 'use server'
 
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { cookies } from 'next/headers'
 import { z } from 'zod'
 import { db } from '@/db/client'
 import { themeModeValues, themePaletteValues } from '@/db/schema/enums'
 import { users } from '@/db/schema/users'
-import { requireCurrentUser } from '@/lib/auth/session'
+import { requireReadyUser } from '@/lib/auth/session'
 import type { ActionResult } from '@/lib/action-result'
 
 const themeSchema = z.object({
@@ -15,11 +15,14 @@ const themeSchema = z.object({
 })
 
 export const saveThemeAction = async (mode: string, palette: string): Promise<ActionResult> => {
-  const currentUser = await requireCurrentUser()
+  const currentUser = await requireReadyUser()
   const parsed = themeSchema.safeParse({ mode, palette })
   if (!parsed.success) return { success: false, error: 'Thème invalide.' }
 
-  await db.update(users).set({ themeMode: parsed.data.mode, themePalette: parsed.data.palette }).where(eq(users.id, currentUser.id))
+  await db.update(users).set({ themeMode: parsed.data.mode, themePalette: parsed.data.palette }).where(and(
+    eq(users.id, currentUser.id),
+    eq(users.familyId, currentUser.familyId),
+  ))
   const cookieStore = await cookies()
   cookieStore.set('wall_be_back_theme', `${parsed.data.mode}:${parsed.data.palette}`, {
     httpOnly: true,

@@ -28,7 +28,7 @@ const formatDate = (date: Date) => new Intl.DateTimeFormat('fr-FR', {
   timeZone: 'Europe/Paris',
 }).format(date)
 
-const requestedPostIdSchema = z.string().uuid()
+const requestedPostIdSchema = z.uuid()
 const postRelations = {
   author: {
     columns: {

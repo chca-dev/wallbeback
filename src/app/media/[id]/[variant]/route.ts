@@ -12,7 +12,7 @@ import {
 } from '@/lib/media/storage'
 
 const mediaRequestSchema = z.object({
-  id: z.string().uuid(),
+  id: z.uuid(),
   variant: z.enum(mediaVariantValues),
 })
 

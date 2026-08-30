@@ -5,7 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { db } from '@/db/client'
 import { users } from '@/db/schema/users'
-import { requireCurrentUser } from '@/lib/auth/session'
+import { requireReadyUser } from '@/lib/auth/session'
 import type { ActionResult } from '@/lib/action-result'
 
 export type MemberProfileActionState = ActionResult
@@ -19,7 +19,7 @@ export const updateMemberProfileAction = async (
   _previousState: MemberProfileActionState,
   formData: FormData,
 ): Promise<MemberProfileActionState> => {
-  const currentUser = await requireCurrentUser()
+  const currentUser = await requireReadyUser()
   const parsed = profileSchema.safeParse({
     displayName: formData.get('displayName'),
     avatarTone: formData.get('avatarTone'),

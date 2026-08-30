@@ -7,16 +7,16 @@ import { db } from '@/db/client'
 import { calendarEventTypeValues } from '@/db/schema/enums'
 import { events } from '@/db/schema/events'
 import { users } from '@/db/schema/users'
-import { requireCurrentUser } from '@/lib/auth/session'
+import { requireReadyUser } from '@/lib/auth/session'
 import type { ActionResult } from '@/lib/action-result'
 
 export type CalendarActionState = ActionResult
 
 const eventSchema = z.object({
-  eventId: z.string().uuid().optional(),
+  eventId: z.uuid().optional(),
   title: z.string().trim().min(1, 'Ajoute un titre.').max(160, 'Le titre est trop long.'),
   type: z.enum(calendarEventTypeValues),
-  memberId: z.preprocess((value) => value === '' ? null : value, z.string().uuid().nullable()),
+  memberId: z.preprocess((value) => value === '' ? null : value, z.uuid().nullable()),
   description: z.string().trim().max(5000, 'La description est trop longue.'),
   location: z.string().trim().max(255, 'Le lieu est trop long.'),
   startsAt: z.string().min(1, 'Choisis une date.'),
@@ -92,7 +92,7 @@ export const createEventAction = async (
   _previousState: CalendarActionState,
   formData: FormData,
 ): Promise<CalendarActionState> => {
-  const currentUser = await requireCurrentUser()
+  const currentUser = await requireReadyUser()
   const parsed = readEventForm(formData)
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Événement invalide.' }
 
@@ -125,7 +125,7 @@ export const updateEventAction = async (
   _previousState: CalendarActionState,
   formData: FormData,
 ): Promise<CalendarActionState> => {
-  const currentUser = await requireCurrentUser()
+  const currentUser = await requireReadyUser()
   const parsed = readEventForm(formData)
   if (!parsed.success || !parsed.data.eventId) return { error: 'Événement invalide.' }
 
@@ -160,8 +160,8 @@ export const deleteEventAction = async (
   _previousState: CalendarActionState,
   formData: FormData,
 ): Promise<CalendarActionState> => {
-  const currentUser = await requireCurrentUser()
-  const parsed = z.string().uuid().safeParse(formData.get('eventId'))
+  const currentUser = await requireReadyUser()
+  const parsed = z.uuid().safeParse(formData.get('eventId'))
   if (!parsed.success) return { error: 'Événement invalide.' }
 
   const target = await getManagedEvent(parsed.data, currentUser.familyId)

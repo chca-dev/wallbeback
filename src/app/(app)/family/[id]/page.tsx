@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { and, asc, eq } from 'drizzle-orm'
 import { ArrowLeft, CalendarDays } from 'lucide-react'
 import { notFound } from 'next/navigation'
+import { z } from 'zod'
 import { Avatar } from '@/components/avatar'
 import { MemberProfileForm } from '@/components/member-profile-form'
 import { db } from '@/db/client'
@@ -16,12 +17,15 @@ export const metadata: Metadata = { title: 'Membre de la famille' }
 type MemberPageProps = { params: Promise<{ id: string }> }
 const roleLabels: Record<UserRole, string> = { admin: 'Administrateur', adult: 'Adulte', child: 'Enfant' }
 const avatarTones: AvatarTone[] = ['blue', 'pink', 'cyan', 'lavender']
+const memberIdSchema = z.uuid()
 const getAvatarTone = (tone: string): AvatarTone => avatarTones.includes(tone as AvatarTone) ? tone as AvatarTone : 'blue'
 const formatEventDate = (date: Date) => new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long', timeStyle: 'short', timeZone: 'Europe/Paris' }).format(date)
 
 const MemberPage = async ({ params }: MemberPageProps) => {
   const currentUser = await requireCurrentUser()
-  const { id } = await params
+  const parsedId = memberIdSchema.safeParse((await params).id)
+  if (!parsedId.success) notFound()
+  const id = parsedId.data
   const member = await db.query.users.findFirst({ where: and(eq(users.id, id), eq(users.familyId, currentUser.familyId), eq(users.isActive, true)) })
   if (!member) notFound()
 

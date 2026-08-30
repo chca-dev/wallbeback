@@ -7,11 +7,12 @@ import { getCurrentUser } from '@/lib/auth/session'
 import { readAvatarImage } from '@/lib/media/storage'
 
 type AvatarRouteProps = { params: Promise<{ id: string }> }
-const memberIdSchema = z.string().uuid()
+const memberIdSchema = z.uuid()
 
 export const GET = async (_request: Request, { params }: AvatarRouteProps) => {
   const currentUser = await getCurrentUser()
   if (!currentUser) return new NextResponse(null, { status: 401 })
+  if (currentUser.mustChangePassword) return new NextResponse(null, { status: 403 })
   const parsedId = memberIdSchema.safeParse((await params).id)
   if (!parsedId.success) return new NextResponse(null, { status: 404 })
   const id = parsedId.data

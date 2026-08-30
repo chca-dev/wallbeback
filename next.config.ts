@@ -18,6 +18,11 @@ const contentSecurityPolicy = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '128kb',
+    },
+  },
   headers: async () => [
     {
       source: '/(.*)',

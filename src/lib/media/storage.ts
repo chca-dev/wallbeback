@@ -13,7 +13,7 @@ export const mediaVariantValues = ['display', 'thumb'] as const
 
 export type MediaVariant = typeof mediaVariantValues[number]
 
-const storageKeySchema = z.string().uuid()
+const storageKeySchema = z.uuid()
 const mediaRoot = resolve(serverEnvironment.UPLOAD_DIR)
 const avatarRoot = resolve(mediaRoot, 'avatars')
 const bannerRoot = resolve(mediaRoot, 'banners')

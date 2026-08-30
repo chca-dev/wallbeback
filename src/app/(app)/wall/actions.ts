@@ -7,7 +7,7 @@ import { db } from '@/db/client'
 import { postVisibilityValues } from '@/db/schema/enums'
 import { photos } from '@/db/schema/photos'
 import { posts, replies } from '@/db/schema/wall'
-import { requireCurrentUser } from '@/lib/auth/session'
+import { requireReadyUser } from '@/lib/auth/session'
 import type { ActionResult } from '@/lib/action-result'
 import { removeProcessedImage } from '@/lib/media/storage'
 
@@ -26,22 +26,22 @@ const createPostSchema = z
   )
 
 const createReplySchema = z.object({
-  postId: z.string().uuid(),
+  postId: z.uuid(),
   content: requiredContentSchema,
 })
 
 const updatePostSchema = z.object({
-  postId: z.string().uuid(),
+  postId: z.uuid(),
   content: requiredContentSchema,
 })
 
 const updateReplySchema = z.object({
-  replyId: z.string().uuid(),
+  replyId: z.uuid(),
   content: requiredContentSchema,
 })
 
-const postIdSchema = z.object({ postId: z.string().uuid() })
-const replyIdSchema = z.object({ replyId: z.string().uuid() })
+const postIdSchema = z.object({ postId: z.uuid() })
+const replyIdSchema = z.object({ replyId: z.uuid() })
 
 export type WallActionState = ActionResult<'content'> & {
   postId?: string
@@ -98,7 +98,7 @@ export const createPostAction = async (
   _previousState: WallActionState,
   formData: FormData,
 ): Promise<WallActionState> => {
-  const currentUser = await requireCurrentUser()
+  const currentUser = await requireReadyUser()
   const parsed = createPostSchema.safeParse({
     content: formData.get('content'),
     hasPhotos: formData.get('hasPhotos'),
@@ -131,7 +131,7 @@ export const createReplyAction = async (
   _previousState: WallActionState,
   formData: FormData,
 ): Promise<WallActionState> => {
-  const currentUser = await requireCurrentUser()
+  const currentUser = await requireReadyUser()
   const parsed = createReplySchema.safeParse({
     postId: formData.get('postId'),
     content: formData.get('content'),
@@ -177,7 +177,7 @@ export const updatePostAction = async (
   _previousState: WallActionState,
   formData: FormData,
 ): Promise<WallActionState> => {
-  const currentUser = await requireCurrentUser()
+  const currentUser = await requireReadyUser()
   const parsed = updatePostSchema.safeParse({
     postId: formData.get('postId'),
     content: formData.get('content'),
@@ -200,7 +200,7 @@ export const updatePostAction = async (
   await db
     .update(posts)
     .set({ content: parsed.data.content })
-    .where(eq(posts.id, targetPost.id))
+    .where(and(eq(posts.id, targetPost.id), eq(posts.familyId, currentUser.familyId)))
 
   revalidatePath('/wall')
   return { success: true, message: 'Publication modifiée.' }
@@ -210,7 +210,7 @@ export const deletePostAction = async (
   _previousState: WallActionState,
   formData: FormData,
 ): Promise<WallActionState> => {
-  const currentUser = await requireCurrentUser()
+  const currentUser = await requireReadyUser()
   const parsed = postIdSchema.safeParse({ postId: formData.get('postId') })
 
   if (!parsed.success) {
@@ -246,7 +246,10 @@ export const deletePostAction = async (
           eq(photos.familyId, currentUser.familyId),
         ),
       )
-    await transaction.delete(posts).where(eq(posts.id, targetPost.id))
+    await transaction.delete(posts).where(and(
+      eq(posts.id, targetPost.id),
+      eq(posts.familyId, currentUser.familyId),
+    ))
   })
 
   await Promise.allSettled(
@@ -262,7 +265,7 @@ export const updateReplyAction = async (
   _previousState: WallActionState,
   formData: FormData,
 ): Promise<WallActionState> => {
-  const currentUser = await requireCurrentUser()
+  const currentUser = await requireReadyUser()
   const parsed = updateReplySchema.safeParse({
     replyId: formData.get('replyId'),
     content: formData.get('content'),
@@ -285,7 +288,7 @@ export const updateReplyAction = async (
   await db
     .update(replies)
     .set({ content: parsed.data.content })
-    .where(eq(replies.id, targetReply.id))
+    .where(and(eq(replies.id, targetReply.id), eq(replies.familyId, currentUser.familyId)))
 
   revalidatePath('/wall')
   return { success: true, message: 'Réponse modifiée.' }
@@ -295,7 +298,7 @@ export const deleteReplyAction = async (
   _previousState: WallActionState,
   formData: FormData,
 ): Promise<WallActionState> => {
-  const currentUser = await requireCurrentUser()
+  const currentUser = await requireReadyUser()
   const parsed = replyIdSchema.safeParse({ replyId: formData.get('replyId') })
 
   if (!parsed.success) {
@@ -312,7 +315,10 @@ export const deleteReplyAction = async (
     return { error: 'Tu ne peux pas supprimer cette réponse.' }
   }
 
-  await db.delete(replies).where(eq(replies.id, targetReply.id))
+  await db.delete(replies).where(and(
+    eq(replies.id, targetReply.id),
+    eq(replies.familyId, currentUser.familyId),
+  ))
 
   revalidatePath('/wall')
   return { success: true, message: 'Réponse supprimée.' }

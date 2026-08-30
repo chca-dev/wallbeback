@@ -14,7 +14,7 @@ import {
 } from '@/lib/media/process-image'
 
 const multipartOverheadBytes = 1024 * 1024
-const postIdSchema = z.string().uuid()
+const postIdSchema = z.uuid()
 const maxUploadMegabytes = Math.round(
   serverEnvironment.MAX_UPLOAD_BYTES / (1024 * 1024) * 10,
 ) / 10

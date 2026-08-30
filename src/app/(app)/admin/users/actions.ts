@@ -14,7 +14,7 @@ import type { ActionResult } from '@/lib/action-result'
 const avatarToneValues = ['blue', 'pink', 'cyan', 'lavender'] as const
 
 const profileSchema = z.object({
-  userId: z.string().uuid().optional(),
+  userId: z.uuid().optional(),
   displayName: z.string().trim().min(1, 'Saisis un nom affiché.').max(120),
   username: z
     .string()
@@ -32,11 +32,11 @@ const createUserSchema = profileSchema.extend({
 })
 
 const resetPasswordSchema = z.object({
-  userId: z.string().uuid(),
+  userId: z.uuid(),
   temporaryPassword: z.string().min(12, 'Le mot de passe doit contenir au moins 12 caractères.').max(128),
 })
 
-const userIdSchema = z.object({ userId: z.string().uuid() })
+const userIdSchema = z.object({ userId: z.uuid() })
 
 type UserField = 'displayName' | 'username' | 'email' | 'role' | 'avatarTone' | 'temporaryPassword'
 
@@ -210,10 +210,13 @@ export const updateUserAction = async (
         role: parsed.data.role,
         avatarTone: parsed.data.avatarTone,
       })
-      .where(eq(users.id, target.id))
+      .where(and(eq(users.id, target.id), eq(users.familyId, currentAdmin.familyId)))
 
     if (target.role !== parsed.data.role) {
-      await transaction.delete(sessions).where(eq(sessions.userId, target.id))
+      await transaction.delete(sessions).where(and(
+        eq(sessions.userId, target.id),
+        eq(sessions.familyId, currentAdmin.familyId),
+      ))
     }
   })
 
@@ -268,10 +271,13 @@ export const toggleUserStatusAction = async (
     await transaction
       .update(users)
       .set({ isActive: !target.isActive })
-      .where(eq(users.id, target.id))
+      .where(and(eq(users.id, target.id), eq(users.familyId, currentAdmin.familyId)))
 
     if (target.isActive) {
-      await transaction.delete(sessions).where(eq(sessions.userId, target.id))
+      await transaction.delete(sessions).where(and(
+        eq(sessions.userId, target.id),
+        eq(sessions.familyId, currentAdmin.familyId),
+      ))
     }
   })
 
@@ -328,9 +334,12 @@ export const resetUserPasswordAction = async (
         failedLoginAttempts: 0,
         lockedUntil: null,
       })
-      .where(eq(users.id, target.id))
+      .where(and(eq(users.id, target.id), eq(users.familyId, currentAdmin.familyId)))
 
-    await transaction.delete(sessions).where(eq(sessions.userId, target.id))
+    await transaction.delete(sessions).where(and(
+      eq(sessions.userId, target.id),
+      eq(sessions.familyId, currentAdmin.familyId),
+    ))
   })
 
   revalidateUserViews()

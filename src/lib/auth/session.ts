@@ -91,8 +91,18 @@ export const requireCurrentUser = async () => {
   return currentUser
 }
 
-export const requireAdmin = async () => {
+export const requireReadyUser = async () => {
   const currentUser = await requireCurrentUser()
+
+  if (currentUser.mustChangePassword) {
+    redirect('/change-password')
+  }
+
+  return currentUser
+}
+
+export const requireAdmin = async () => {
+  const currentUser = await requireReadyUser()
 
   if (currentUser.role !== 'admin') {
     redirect('/wall')
