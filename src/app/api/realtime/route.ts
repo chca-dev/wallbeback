@@ -19,7 +19,7 @@ export const GET = async (request: Request) => {
   if (!currentUser) return new NextResponse(null, { status: 401 })
   if (currentUser.mustChangePassword) return new NextResponse(null, { status: 403 })
 
-  let unsubscribe = () => undefined
+  let unsubscribe: () => void = () => undefined
   let heartbeat: ReturnType<typeof setInterval> | undefined
 
   const stream = new ReadableStream<Uint8Array>({

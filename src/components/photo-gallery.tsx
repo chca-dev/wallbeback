@@ -50,7 +50,7 @@ export const PhotoGallery = ({
       ? { pages: [initialPage], pageParams: [null] }
       : undefined,
   })
-  const galleryPages = galleryQuery.data?.pages ?? []
+  const galleryPages = useMemo(() => galleryQuery.data?.pages ?? [], [galleryQuery.data])
   const members = galleryPages[0]?.members ?? initialPage.members
   const totalCount = galleryPages[0]?.totalCount ?? 0
   const photos = useMemo(() => {

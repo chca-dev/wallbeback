@@ -21,7 +21,8 @@ type RealtimeGlobal = typeof globalThis & {
 }
 
 const realtimeGlobal = globalThis as RealtimeGlobal
-const realtimeStore = realtimeGlobal.wallBeBackRealtimeStore ?? new Map()
+const realtimeStore = realtimeGlobal.wallBeBackRealtimeStore
+  ?? new Map<string, Set<RealtimeListener>>()
 realtimeGlobal.wallBeBackRealtimeStore = realtimeStore
 
 export const publishRealtimeEvent = (familyId: string, type: RealtimeEventType) => {
