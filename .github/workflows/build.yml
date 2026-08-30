@@ -11,8 +11,8 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      DATABASE_URL: ${{ secrets.WALLBEBACK_DATABASE_URL || 'postgresql://ci:ci@127.0.0.1:5432/wallbeback_ci' }}
-      SESSION_SECRET: ${{ secrets.WALLBEBACK_SESSION_SECRET || 'ci-only-session-secret-do-not-use-in-production-1234567890' }}
+      DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/wallbeback_ci
+      SESSION_SECRET: ci-only-session-secret-do-not-use-in-production-1234567890
       UPLOAD_DIR: /tmp/wallbeback-media
       MAX_UPLOAD_BYTES: ${{ secrets.WALLBEBACK_MAX_UPLOAD_BYTES || '20971520' }}
       MAX_IMAGE_PIXELS: ${{ secrets.WALLBEBACK_MAX_IMAGE_PIXELS || '25000000' }}
