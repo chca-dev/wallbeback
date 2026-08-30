@@ -121,7 +121,7 @@ const ReplyForm = ({ postId, currentUser, onClose }: {
   const [state, formAction, pending] = useActionState(submitReply, initialState)
 
   return (
-    <form action={formAction} className="mt-[14px] pl-[30px]">
+    <form action={formAction} className="mt-3.5 pl-7.5">
       <input type="hidden" name="postId" value={postId} />
       <div className="flex items-center gap-2.5">
         <Avatar name={currentUser.displayName} tone={currentUser.avatarTone} imageUrl={currentUser.avatarUrl} size="sm" />
@@ -132,9 +132,9 @@ const ReplyForm = ({ postId, currentUser, onClose }: {
           onChange={(event) => setContent(event.target.value)}
           maxLength={5000}
           placeholder="Écrire une réponse…"
-          className="min-w-0 flex-1 rounded-[20px] border border-border bg-surface px-[14px] py-[9px] text-[13px] outline-none transition-colors placeholder:text-faint focus:border-primary"
+          className="min-w-0 flex-1 rounded-[20px] border border-border bg-surface px-3.5 py-2.25 text-[13px] outline-none transition-colors placeholder:text-faint focus:border-primary"
         />
-        <button type="submit" disabled={pending || !content.trim()} aria-label="Envoyer la réponse" className="grid size-[34px] place-items-center rounded-full bg-primary text-white transition-[transform,opacity] duration-150 enabled:hover:scale-[1.08] disabled:cursor-not-allowed disabled:opacity-30">
+        <button type="submit" disabled={pending || !content.trim()} aria-label="Envoyer la réponse" className="grid size-8.5 place-items-center rounded-full bg-primary text-white transition-[transform,opacity] duration-150 enabled:hover:scale-[1.08] disabled:cursor-not-allowed disabled:opacity-30">
           <Send size={15} />
         </button>
       </div>
@@ -245,15 +245,15 @@ const PostCard = ({ post, currentUser }: { post: WallPost, currentUser: WallFeed
   const [updateState, updateAction, updatePending] = useActionState(submitUpdate, initialState)
 
   return (
-    <article id={`post-${post.id}`} className={`mb-10 scroll-mt-28 border-b border-border pb-[38px] ${post.adultsOnly ? 'border-l-[3px] border-l-secondary pl-4' : ''}`}>
-      <header className="flex items-center gap-[13px]">
+    <article id={`post-${post.id}`} className={`mb-10 scroll-mt-28 border-b border-border pb-9.5 ${post.adultsOnly ? 'border-l-[3px] border-l-secondary pl-4' : ''}`}>
+      <header className="flex items-center gap-3.25">
       <Avatar name={post.author} tone={post.tone} imageUrl={post.avatarUrl} size="lg" />
         <div>
           <div className="flex flex-wrap items-center gap-2">
             <strong className="text-sm">{post.author}</strong>
             {post.adultsOnly ? <span className="flex items-center gap-1 rounded-full bg-secondary-soft px-2 py-0.5 text-[10px] font-bold text-secondary"><Lock size={10} /> Adultes</span> : null}
           </div>
-          <span className="mt-[3px] block font-mono text-[10px] text-faint">{post.time}</span>
+          <span className="mt-0.75 block font-mono text-[10px] text-faint">{post.time}</span>
         </div>
         {canManage ? (
           <div className="ml-auto flex shrink-0 items-center gap-1">
@@ -280,7 +280,7 @@ const PostCard = ({ post, currentUser }: { post: WallPost, currentUser: WallFeed
         ) : null}
       </header>
       {editing ? (
-        <form action={updateAction} className="mb-4 mt-[18px]">
+        <form action={updateAction} className="mb-4 mt-4.5">
           <input type="hidden" name="postId" value={post.id} />
           <textarea
             name="content"
@@ -299,10 +299,10 @@ const PostCard = ({ post, currentUser }: { post: WallPost, currentUser: WallFeed
           <Feedback state={updateState} />
         </form>
       ) : post.content ? (
-        <p className="mb-4 mt-[18px] whitespace-pre-wrap text-[15px] leading-[1.6] tracking-[-0.01em]">{post.content}</p>
+        <p className="mb-4 mt-4.5 whitespace-pre-wrap text-[15px] leading-[1.6] tracking-[-0.01em]">{post.content}</p>
       ) : null}
       {post.photos.length ? (
-        <div className='mb-4 grid grid-cols-2 gap-2 overflow-hidden rounded-[16px]'>
+        <div className='mb-4 grid grid-cols-2 gap-2 overflow-hidden rounded-2xl'>
           {post.photos.map((photo, index) => {
             const isWide = post.photos.length === 1 || (
               post.photos.length % 2 === 1 && index === 0
@@ -315,7 +315,7 @@ const PostCard = ({ post, currentUser }: { post: WallPost, currentUser: WallFeed
                 target='_blank'
                 rel='noreferrer'
                 aria-label={`Ouvrir la photo ${index + 1} de la publication`}
-                className={`group relative overflow-hidden bg-surface-soft ${isWide ? 'col-span-2 aspect-[16/10]' : 'aspect-square'}`}
+                className={`group relative overflow-hidden bg-surface-soft ${isWide ? 'col-span-2 aspect-16/10' : 'aspect-square'}`}
               >
                 <Image
                   src={photo.displayUrl}
@@ -335,13 +335,13 @@ const PostCard = ({ post, currentUser }: { post: WallPost, currentUser: WallFeed
         type="button"
         aria-expanded={replying}
         onClick={() => setReplying((current) => !current)}
-        className="flex items-center gap-[5px] rounded-[10px] px-3 py-[7px] text-[11px] font-semibold text-muted transition-colors hover:bg-surface-soft hover:text-foreground"
+        className="flex items-center gap-1.25 rounded-[10px] px-3 py-1.75 text-[11px] font-semibold text-muted transition-colors hover:bg-surface-soft hover:text-foreground"
       >
         <MessageCircle size={16} /> {post.replies.length} réponse{post.replies.length > 1 ? 's' : ''}
       </button>
 
       {post.replies.length ? (
-        <div className="mt-2 space-y-[14px] border-l-2 border-primary-soft pb-1 pl-4 pt-5">
+        <div className="mt-2 space-y-3.5 border-l-2 border-primary-soft pb-1 pl-4 pt-5">
           {post.replies.map((item) => (
             <ReplyItem key={item.id} reply={item} currentUser={currentUser} />
           ))}
@@ -578,7 +578,7 @@ export const WallFeed = ({
     <>
       <form
         action={formAction}
-        className={`mb-6 rounded-[18px] border bg-surface p-5 transition-colors ${adultsOnly ? 'border-secondary-soft' : 'border-border'}`}
+        className={`mb-6 rounded-card border bg-surface p-5 transition-colors ${adultsOnly ? 'border-secondary-soft' : 'border-border'}`}
       >
         <input type='hidden' name='visibility' value={adultsOnly ? 'adults' : 'family'} />
         <input type='hidden' name='hasPhotos' value={selectedFiles.length ? 'true' : 'false'} />
@@ -591,7 +591,7 @@ export const WallFeed = ({
           className='sr-only'
           onChange={selectPhotos}
         />
-        <div className='mb-[14px] flex items-center gap-[11px]'>
+        <div className='mb-3.5 flex items-center gap-2.75'>
           <Avatar name={currentUser.displayName} tone={currentUser.avatarTone} imageUrl={currentUser.avatarUrl} />
           <div>
             <strong className='block text-sm'>{currentUser.displayName}</strong>
@@ -612,7 +612,7 @@ export const WallFeed = ({
           maxLength={5000}
           placeholder='Quoi de neuf chez vous ?'
           rows={3}
-          className='min-h-[72px] w-full resize-y rounded-control border border-border bg-surface px-[14px] py-3 text-[15px] leading-[1.5] outline-none transition-colors placeholder:text-faint focus:border-primary'
+          className='min-h-18 w-full resize-y rounded-control border border-border bg-surface px-3.5 py-3 text-[15px] leading-normal outline-none transition-colors placeholder:text-faint focus:border-primary'
         />
 
         {selectedFiles.length ? (
@@ -628,7 +628,7 @@ export const WallFeed = ({
           </div>
         ) : null}
 
-        <div className='mt-[14px] flex flex-wrap items-center gap-3'>
+        <div className='mt-3.5 flex flex-wrap items-center gap-3'>
           <button
             type='button'
             disabled={pending || isUploading || selectedFiles.length >= maxSelectedFiles}
@@ -644,7 +644,7 @@ export const WallFeed = ({
                 aria-pressed={adultsOnly}
                 disabled={pending || isUploading}
                 onClick={() => setAdultsOnly((current) => !current)}
-                className={`flex items-center gap-[7px] rounded-[22px] border py-2 pl-3 pr-2.5 text-[11px] font-semibold transition-colors disabled:opacity-40 ${adultsOnly ? 'border-secondary bg-secondary-soft text-secondary' : 'border-border text-muted hover:border-secondary-soft'}`}
+                className={`flex items-center gap-1.75 rounded-[22px] border py-2 pl-3 pr-2.5 text-[11px] font-semibold transition-colors disabled:opacity-40 ${adultsOnly ? 'border-secondary bg-secondary-soft text-secondary' : 'border-border text-muted hover:border-secondary-soft'}`}
               >
                 <Lock size={14} /> Adultes uniquement
               </button>
@@ -652,7 +652,7 @@ export const WallFeed = ({
             <button
               type='submit'
               disabled={pending || isUploading || (!content.trim() && !selectedFiles.length)}
-              className='flex items-center gap-1.5 rounded-[10px] bg-primary px-4 py-[9px] font-display text-[13px] font-semibold text-white transition-[transform,opacity] duration-150 enabled:hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-40'
+              className='flex items-center gap-1.5 rounded-[10px] bg-primary px-4 py-2.25 font-display text-[13px] font-semibold text-white transition-[transform,opacity] duration-150 enabled:hover:-translate-y-px disabled:cursor-not-allowed disabled:opacity-40'
             >
               {pending || isUploading
                 ? <LoaderCircle aria-hidden='true' size={14} className='animate-spin' />

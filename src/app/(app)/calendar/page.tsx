@@ -61,7 +61,7 @@ const CalendarPage = async ({ searchParams }: CalendarPageProps) => {
   const members: CalendarMember[] = activeMembers
 
   return (
-    <div className='mx-auto max-w-[1100px] px-4 pb-[90px] pt-4 min-[521px]:px-6 min-[521px]:pt-5 min-[821px]:px-[52px] min-[821px]:pb-[70px] min-[821px]:pt-6'>
+    <div className='mx-auto max-w-275 px-4 pb-22.5 pt-4 min-[521px]:px-6 min-[521px]:pt-5 min-[821px]:px-13 min-[821px]:pb-17.5 min-[821px]:pt-6'>
       <Calendar currentUserId={currentUser.id} isAdmin={currentUser.role === 'admin'} month={month} today={today} events={eventViews} members={members} />
     </div>
   )

@@ -71,12 +71,12 @@ export const ImageCropDialog = ({ file, aspect, title, onCancel, onConfirm }: Im
     }
   }, [onCancel])
 
-  return <div role='dialog' aria-modal='true' aria-label={title} className='fixed inset-0 z-[100] grid place-items-center bg-black/75 p-4'>
+  return <div role='dialog' aria-modal='true' aria-label={title} className='fixed inset-0 z-100 grid place-items-center bg-black/75 p-4'>
     <div ref={dialogRef} tabIndex={-1} className='w-full max-w-3xl rounded-card border border-border bg-surface p-4 shadow-float'>
       <h2 className='font-display text-lg font-semibold'>{title}</h2>
       <p className='mt-1 text-xs text-muted'>Déplace l’image et ajuste le zoom pour choisir la zone conservée.</p>
       <div className='relative mt-4 h-[min(58vh,460px)] overflow-hidden rounded-xl bg-black'>{imageUrl ? <Cropper image={imageUrl} crop={crop} zoom={zoom} rotation={0} aspect={aspect} minZoom={1} maxZoom={3} cropShape='rect' showGrid={false} zoomSpeed={1} style={{}} classes={{}} restrictPosition mediaProps={{}} cropperProps={{}} keyboardStep={1} onCropChange={setCrop} onZoomChange={setZoom} onCropComplete={(area) => setSelection(area)} /> : null}</div>
-      <label className='mt-4 flex items-center gap-3 text-xs font-semibold'>Zoom<input className='min-w-0 flex-1 accent-[var(--app-primary)]' type='range' min={1} max={3} step={0.01} value={zoom} onChange={(event) => setZoom(Number(event.target.value))} /></label>
+      <label className='mt-4 flex items-center gap-3 text-xs font-semibold'>Zoom<input className='min-w-0 flex-1 accent-primary' type='range' min={1} max={3} step={0.01} value={zoom} onChange={(event) => setZoom(Number(event.target.value))} /></label>
       <div className='mt-4 flex justify-end gap-2'><button type='button' onClick={onCancel} className='rounded-xl px-4 py-2.5 text-xs font-semibold text-muted'>Annuler</button><button type='button' disabled={!selection} onClick={() => { if (selection) onConfirm(selection) }} className='rounded-xl bg-primary px-4 py-2.5 text-xs font-bold text-white disabled:opacity-40'>Utiliser ce cadrage</button></div>
     </div>
   </div>

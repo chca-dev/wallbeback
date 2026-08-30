@@ -35,17 +35,17 @@ export const AppShell = ({ children, user }: AppShellProps) => {
   const pathname = usePathname()
   return (
   <div className="flex min-h-screen bg-background text-foreground">
-    <aside className='sticky top-0 hidden h-dvh w-[214px] shrink-0 self-start flex-col overflow-hidden border-r border-border bg-surface px-4 pb-6 pt-[30px] min-[821px]:flex min-[1101px]:w-[248px] min-[1101px]:px-[22px]'>
-      <div className='min-h-0 flex-1 overflow-y-auto pb-6 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'>
+    <aside className='sticky top-0 hidden h-dvh w-53.5 shrink-0 self-start flex-col overflow-hidden border-r border-border bg-surface px-4 pb-6 pt-7.5 min-[821px]:flex min-[1101px]:w-62 min-[1101px]:px-5.5'>
+      <div className='scrollbar-none min-h-0 flex-1 overflow-y-auto pb-6 [&::-webkit-scrollbar]:hidden'>
         <div className='group flex items-center gap-2.5 font-display text-[17px] font-bold tracking-[-0.04em]'>
-          <span className='grid size-[30px] -rotate-[7deg] place-items-center rounded-[10px] bg-primary text-white transition-transform duration-300 group-hover:rotate-0 group-hover:scale-[1.08]'>
+          <span className='grid size-7.5 rotate-[-7deg] place-items-center rounded-[10px] bg-primary text-white transition-transform duration-300 group-hover:rotate-0 group-hover:scale-[1.08]'>
             <Sparkles className='rotate-[7deg] transition-transform duration-300 group-hover:rotate-0' size={17} />
           </span>
           Wall Be Back
         </div>
 
         <div className='mt-11 flex items-center gap-2.5 rounded-[14px] border border-border bg-surface p-2.5'>
-          <span className='grid size-[31px] place-items-center rounded-[9px] bg-primary text-[10px] font-extrabold text-white'>FM</span>
+          <span className='grid size-7.75 place-items-center rounded-[9px] bg-primary text-[10px] font-extrabold text-white'>FM</span>
           <div className='min-w-0 flex-1'>
             <strong className='block truncate text-xs'>{user.familyName}</strong>
             <span className='mt-0.5 block text-[10px] text-muted'>Espace privé</span>
@@ -83,14 +83,14 @@ export const AppShell = ({ children, user }: AppShellProps) => {
     </aside>
 
     <div className="min-w-0 flex-1">
-      <header className="flex h-14 items-center justify-between border-b border-border px-5 min-[821px]:h-[66px] min-[821px]:px-8 min-[1101px]:px-[52px]">
-        {pathname === '/wall' ? <p className='font-display text-lg font-semibold tracking-[-0.025em] min-[821px]:text-[22px]'>Les nouvelles du <span className='text-primary'>front.</span></p> : <div className="group flex items-center gap-2.5 font-display text-[17px] font-bold tracking-[-0.04em] min-[821px]:hidden">
-          <span className="grid size-[30px] -rotate-[7deg] place-items-center rounded-[10px] bg-primary text-white transition-transform duration-300 group-hover:rotate-0 group-hover:scale-[1.08]">
+      <header className="flex h-14 items-center justify-between border-b border-border px-5 min-[821px]:h-16.5 min-[821px]:px-8 min-[1101px]:px-13">
+        {pathname === '/wall' ? <p className='font-display text-lg font-semibold tracking-tight min-[821px]:text-[22px]'>Les nouvelles du <span className='text-primary'>front.</span></p> : <div className="group flex items-center gap-2.5 font-display text-[17px] font-bold tracking-[-0.04em] min-[821px]:hidden">
+          <span className="grid size-7.5 rotate-[-7deg] place-items-center rounded-[10px] bg-primary text-white transition-transform duration-300 group-hover:rotate-0 group-hover:scale-[1.08]">
             <Sparkles className="rotate-[7deg] transition-transform duration-300 group-hover:rotate-0" size={16} />
           </span>
           Wall Be Back
         </div>}
-        <div className="flex items-center gap-[23px]">
+        <div className="flex items-center gap-5.75">
           <ThemeControls
             mode={user.themeMode}
             palette={user.themePalette}
@@ -104,7 +104,7 @@ export const AppShell = ({ children, user }: AppShellProps) => {
               <LogOut size={17} />
             </button>
           </form>
-          <div className="flex items-center gap-2 rounded-[22px] py-[5px] pl-[5px] pr-2.5 transition-colors duration-200 hover:bg-surface-soft">
+          <div className="flex items-center gap-2 rounded-[22px] py-1.25 pl-1.25 pr-2.5 transition-colors duration-200 hover:bg-surface-soft">
             <Avatar name={user.displayName} tone={user.avatarTone} imageUrl={user.hasAvatar ? `/avatar/${user.id}` : null} size="sm" />
             <span className="hidden max-w-32 truncate text-xs font-bold min-[821px]:block">{user.displayName}</span>
           </div>
