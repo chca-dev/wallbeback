@@ -56,10 +56,10 @@ export const AppShell = ({ children, user }: AppShellProps) => {
       </div>
 
       <div className='shrink-0 border-t border-border bg-surface pt-4'>
-        <div className='flex gap-2.5 rounded-[14px] bg-surface-pink p-[15px] text-[10px] leading-[1.6] text-muted transition-transform duration-200 hover:scale-[1.02]'>
+        <div className='flex gap-2.5 rounded-[14px] bg-surface-pink p-3.75 text-[10px] leading-[1.6] text-muted transition-transform duration-200 hover:scale-[1.02]'>
           <span aria-hidden='true' className='text-lg leading-[1.2] text-secondary'>✦</span>
           <p>
-            <strong className='mb-[3px] block text-foreground'>Le petit mot du jour</strong>
+            <strong className='mb-0.75 block text-foreground'>Le petit mot du jour</strong>
             N’oubliez pas les photos de dimanche.
           </p>
         </div>

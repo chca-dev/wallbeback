@@ -385,21 +385,23 @@ const SelectedPhotoPreview = ({
   index: number
   onRemove: () => void
 }) => {
-  const [previewUrl] = useState(() => URL.createObjectURL(file))
+  const imageRef = useRef<HTMLImageElement>(null)
 
   useEffect(() => {
+    const previewUrl = URL.createObjectURL(file)
+
+    if (imageRef.current) imageRef.current.src = previewUrl
+
     return () => URL.revokeObjectURL(previewUrl)
-  }, [previewUrl])
+  }, [file])
 
   return (
     <div className='relative aspect-square overflow-hidden rounded-[12px] bg-surface-soft'>
-      <Image
-        src={previewUrl}
+      {/* eslint-disable-next-line @next/next/no-img-element -- local blob preview, not an optimizable application image */}
+      <img
+        ref={imageRef}
         alt={`Photo sélectionnée ${index + 1}`}
-        fill
-        unoptimized
-        sizes='120px'
-        className='object-cover'
+        className='absolute inset-0 size-full object-cover'
       />
       <button
         type='button'
