@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { DM_Mono, Manrope, Space_Grotesk } from 'next/font/google'
 import { cookies } from 'next/headers'
 import type { ThemeMode, ThemePalette } from '@/db/schema/enums'
@@ -24,11 +24,29 @@ const dmMono = DM_Mono({
 })
 
 export const metadata: Metadata = {
+  applicationName: 'Wall Be Back',
   title: {
     default: 'Wall Be Back',
     template: '%s · Wall Be Back',
   },
   description: 'Le petit espace privé de la famille.',
+  manifest: '/manifest.webmanifest',
+  icons: {
+    icon: [
+      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: [{ url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' }],
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Wall Be Back',
+  },
+}
+
+export const viewport: Viewport = {
+  themeColor: '#5b6cf9',
 }
 
 const modes: ThemeMode[] = ['light', 'dark', 'system']

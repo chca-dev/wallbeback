@@ -11,11 +11,12 @@ import {
   SquarePen,
   Pencil,
   Send,
+  Smile,
   Trash2,
   X,
 } from 'lucide-react'
 import type { ChangeEvent, FormEvent } from 'react'
-import { useActionState, useEffect, useRef, useState } from 'react'
+import { useActionState, useEffect, useRef, useState, useTransition } from 'react'
 import {
   createPostAction,
   createReplyAction,
@@ -24,9 +25,11 @@ import {
   updatePostAction,
   updateReplyAction,
   finalizePostAction,
+  togglePostReactionAction,
   type WallActionState,
 } from '@/app/(app)/wall/actions'
 import { Avatar } from '@/components/avatar'
+import { EmojiPicker } from '@/components/emoji-picker'
 import type { AvatarTone } from '@/lib/avatar'
 import type { CursorPage, WallPost, WallReply } from '@/lib/wall/queries'
 
@@ -43,6 +46,15 @@ type WallFeedProps = {
     canPublishAdults: boolean
   }
 }
+
+const postReactionOptions = [
+  { id: 'heart', emoji: '❤️', label: 'J’adore' },
+  { id: 'laugh', emoji: '😂', label: 'Drôle' },
+  { id: 'like', emoji: '👍', label: 'J’aime' },
+  { id: 'wow', emoji: '😮', label: 'Waouh' },
+  { id: 'sad', emoji: '😢', label: 'Triste' },
+  { id: 'celebrate', emoji: '🎉', label: 'Bravo' },
+] as const
 
 const fetchWallPage = async (cursor: string | null) => {
   const searchParams = new URLSearchParams()
@@ -89,6 +101,7 @@ const ReplyForm = ({ postId, currentUser, onClose }: {
 }) => {
   const queryClient = useQueryClient()
   const [content, setContent] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
   const submitReply = async (
     previousState: WallActionState,
     formData: FormData,
@@ -104,13 +117,28 @@ const ReplyForm = ({ postId, currentUser, onClose }: {
     return nextState
   }
   const [state, formAction, pending] = useActionState(submitReply, initialState)
+  const addEmoji = (emoji: string) => {
+    const selectionStart = inputRef.current?.selectionStart ?? content.length
+    const selectionEnd = inputRef.current?.selectionEnd ?? selectionStart
+    const nextContent = `${content.slice(0, selectionStart)}${emoji}${content.slice(selectionEnd)}`
+
+    if (nextContent.length > 5000) return
+
+    setContent(nextContent)
+    requestAnimationFrame(() => {
+      const nextCursorPosition = selectionStart + emoji.length
+      inputRef.current?.focus()
+      inputRef.current?.setSelectionRange(nextCursorPosition, nextCursorPosition)
+    })
+  }
 
   return (
-    <form action={formAction} className="mt-3.5 pl-7.5">
+    <form action={formAction} className='mt-3.5'>
       <input type="hidden" name="postId" value={postId} />
       <div className="flex items-center gap-2.5">
         <Avatar name={currentUser.displayName} tone={currentUser.avatarTone} imageUrl={currentUser.avatarUrl} size="sm" />
         <input
+          ref={inputRef}
           autoFocus
           name="content"
           value={content}
@@ -119,6 +147,7 @@ const ReplyForm = ({ postId, currentUser, onClose }: {
           placeholder="Écrire une réponse…"
           className="min-w-0 flex-1 rounded-[20px] border border-border bg-surface px-3.5 py-2.25 text-[13px] outline-none transition-colors placeholder:text-faint focus:border-primary"
         />
+        <EmojiPicker align='right' onSelect={addEmoji} />
         <button type="submit" disabled={pending || !content.trim()} aria-label="Envoyer la réponse" className="grid size-8.5 place-items-center rounded-full bg-primary text-white transition-[transform,opacity] duration-150 enabled:hover:scale-[1.08] disabled:cursor-not-allowed disabled:opacity-30">
           <Send size={15} />
         </button>
@@ -209,7 +238,6 @@ const ReplyItem = ({ reply, currentUser }: {
         ) : (
           <p className="mt-1 whitespace-pre-wrap text-[13px] leading-5">{reply.content}</p>
         )}
-        <span className="mt-1 block font-mono text-[9px] text-faint">{reply.time}</span>
         <Feedback state={deleteState} />
       </div>
     </div>
@@ -219,6 +247,11 @@ const ReplyItem = ({ reply, currentUser }: {
 const PostCard = ({ post, currentUser }: { post: WallPost, currentUser: WallFeedProps['currentUser'] }) => {
   const queryClient = useQueryClient()
   const [replying, setReplying] = useState(false)
+  const replyAreaRef = useRef<HTMLDivElement>(null)
+  const reactionPickerRef = useRef<HTMLDivElement>(null)
+  const [reactionPickerOpen, setReactionPickerOpen] = useState(false)
+  const [reactionError, setReactionError] = useState<string | null>(null)
+  const [reactionPending, startReactionTransition] = useTransition()
   const [editing, setEditing] = useState(false)
   const [content, setContent] = useState(post.content)
   const submitDelete = async (previousState: WallActionState, formData: FormData) => {
@@ -247,6 +280,65 @@ const PostCard = ({ post, currentUser }: { post: WallPost, currentUser: WallFeed
     return nextState
   }
   const [updateState, updateAction, updatePending] = useActionState(submitUpdate, initialState)
+
+  useEffect(() => {
+    if (!replying) return
+
+    const closeOnPointerDown = (event: PointerEvent) => {
+      if (event.target instanceof Node && !replyAreaRef.current?.contains(event.target)) {
+        setReplying(false)
+      }
+    }
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setReplying(false)
+    }
+
+    document.addEventListener('pointerdown', closeOnPointerDown)
+    document.addEventListener('keydown', closeOnEscape)
+
+    return () => {
+      document.removeEventListener('pointerdown', closeOnPointerDown)
+      document.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [replying])
+
+  useEffect(() => {
+    if (!reactionPickerOpen) return
+
+    const closeOnPointerDown = (event: PointerEvent) => {
+      if (event.target instanceof Node && !reactionPickerRef.current?.contains(event.target)) {
+        setReactionPickerOpen(false)
+      }
+    }
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setReactionPickerOpen(false)
+    }
+
+    document.addEventListener('pointerdown', closeOnPointerDown)
+    document.addEventListener('keydown', closeOnEscape)
+
+    return () => {
+      document.removeEventListener('pointerdown', closeOnPointerDown)
+      document.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [reactionPickerOpen])
+
+  const toggleReaction = (reaction: string) => {
+    setReactionPickerOpen(false)
+    setReactionError(null)
+    startReactionTransition(() => {
+      void (async () => {
+        const result = await togglePostReactionAction(post.id, reaction)
+
+        if (!result.success) {
+          setReactionError(result.error ?? 'La réaction n’a pas été enregistrée.')
+          return
+        }
+
+        await queryClient.invalidateQueries({ queryKey: ['wall'] })
+      })()
+    })
+  }
 
   return (
     <article id={`post-${post.id}`} className={`mb-10 scroll-mt-28 border-b border-border pb-9.5 ${post.adultsOnly ? 'border-l-[3px] border-l-secondary pl-4' : ''}`}>
@@ -340,14 +432,86 @@ const PostCard = ({ post, currentUser }: { post: WallPost, currentUser: WallFeed
         </div>
       ) : null}
       <Feedback state={deleteState} />
-      <button
-        type="button"
-        aria-expanded={replying}
-        onClick={() => setReplying((current) => !current)}
-        className="flex items-center gap-1.25 rounded-[10px] px-3 py-1.75 text-[11px] font-semibold text-muted transition-colors hover:bg-surface-soft hover:text-foreground"
-      >
-        <MessageCircle size={16} /> {post.replies.length} réponse{post.replies.length > 1 ? 's' : ''}
-      </button>
+      <div ref={replyAreaRef}>
+        <div className='flex items-center justify-between gap-4'>
+          <div className='flex min-w-0 flex-wrap items-center gap-1.5'>
+            <span
+              aria-label={`${post.replies.length} réponse${post.replies.length > 1 ? 's' : ''}`}
+              className='inline-flex items-center gap-1.5 font-mono text-[10px] text-faint'
+            >
+              <MessageCircle aria-hidden='true' size={16} />
+              {post.replies.length}
+            </span>
+            {postReactionOptions.map((option) => {
+              const reaction = post.reactions.find(({ id }) => id === option.id)
+
+              return reaction ? (
+                <button
+                  key={option.id}
+                  type='button'
+                  disabled={reactionPending}
+                  aria-label={`${option.label}, ${reaction.count}`}
+                  aria-pressed={reaction.reacted}
+                  onClick={() => toggleReaction(option.id)}
+                  className={`inline-flex min-h-8 items-center gap-1 rounded-full border px-2 text-xs transition-[transform,border-color,background-color] hover:scale-105 disabled:opacity-50 ${reaction.reacted ? 'border-primary bg-primary-soft' : 'border-border bg-surface hover:border-primary-soft'}`}
+                >
+                  <span aria-hidden='true'>{option.emoji}</span>
+                  <span className='font-mono text-[9px] text-muted'>{reaction.count}</span>
+                </button>
+              ) : null
+            })}
+            <div ref={reactionPickerRef} className='relative'>
+              <button
+                type='button'
+                disabled={reactionPending}
+                aria-label='Ajouter une réaction'
+                aria-expanded={reactionPickerOpen}
+                onClick={() => setReactionPickerOpen((current) => !current)}
+                className='grid size-8 place-items-center rounded-full border border-border text-muted transition-colors hover:border-primary-soft hover:bg-primary-soft hover:text-primary-strong disabled:opacity-50'
+              >
+                <Smile aria-hidden='true' size={15} />
+              </button>
+              {reactionPickerOpen ? (
+                <div
+                  role='group'
+                  aria-label='Choisir une réaction'
+                  className='animate-fade-up absolute bottom-10 left-0 z-40 flex gap-1 rounded-full border border-border bg-surface p-1.5 shadow-float'
+                >
+                  {postReactionOptions.map((option) => (
+                    <button
+                      key={option.id}
+                      type='button'
+                      aria-label={option.label}
+                      onClick={() => toggleReaction(option.id)}
+                      className='grid size-8 place-items-center rounded-full text-lg transition-[transform,background-color] hover:scale-110 hover:bg-surface-soft'
+                    >
+                      {option.emoji}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          </div>
+          {!replying ? (
+            <button
+              type='button'
+              aria-expanded='false'
+              onClick={() => setReplying(true)}
+              className='min-h-9 rounded-[10px] bg-primary px-3.5 text-[11px] font-semibold text-white transition-[transform,background-color] duration-150 hover:-translate-y-px hover:bg-primary-strong'
+            >
+              Commenter
+            </button>
+          ) : null}
+        </div>
+        {replying ? (
+          <div>
+            <ReplyForm postId={post.id} currentUser={currentUser} onClose={() => setReplying(false)} />
+          </div>
+        ) : null}
+        {reactionError ? (
+          <p role='alert' className='mt-2 text-xs font-semibold text-danger'>{reactionError}</p>
+        ) : null}
+      </div>
 
       {post.replies.length ? (
         <div className="mt-2 space-y-3.5 border-l-2 border-primary-soft pb-1 pl-4 pt-5">
@@ -357,9 +521,6 @@ const PostCard = ({ post, currentUser }: { post: WallPost, currentUser: WallFeed
         </div>
       ) : null}
 
-      {replying ? (
-        <ReplyForm postId={post.id} currentUser={currentUser} onClose={() => setReplying(false)} />
-      ) : null}
     </article>
   )
 }
@@ -430,6 +591,7 @@ export const WallFeed = ({
 }: WallFeedProps) => {
   const queryClient = useQueryClient()
   const photoInputRef = useRef<HTMLInputElement>(null)
+  const postContentRef = useRef<HTMLTextAreaElement>(null)
   const handledPostIdRef = useRef<string | null>(null)
   const [content, setContent] = useState('')
   const [adultsOnly, setAdultsOnly] = useState(false)
@@ -473,6 +635,7 @@ export const WallFeed = ({
       adultsOnly,
       photos: [],
       replies: [],
+      reactions: [],
       pending: true,
       pendingPhotos: selectedFiles.length > 0,
     })
@@ -644,6 +807,20 @@ export const WallFeed = ({
     setSelectedFiles((currentFiles) => currentFiles.filter((_, fileIndex) => fileIndex !== index))
     setPhotoMessage(null)
   }
+  const addPostEmoji = (emoji: string) => {
+    const selectionStart = postContentRef.current?.selectionStart ?? content.length
+    const selectionEnd = postContentRef.current?.selectionEnd ?? selectionStart
+    const nextContent = `${content.slice(0, selectionStart)}${emoji}${content.slice(selectionEnd)}`
+
+    if (nextContent.length > 5000) return
+
+    setContent(nextContent)
+    requestAnimationFrame(() => {
+      const nextCursorPosition = selectionStart + emoji.length
+      postContentRef.current?.focus()
+      postContentRef.current?.setSelectionRange(nextCursorPosition, nextCursorPosition)
+    })
+  }
 
   const closeComposer = () => {
     setComposerOpen(false)
@@ -697,6 +874,7 @@ export const WallFeed = ({
           ) : null}
         </div>
         <textarea
+          ref={postContentRef}
           value={content}
           name='content'
           onChange={(event) => setContent(event.target.value)}
@@ -720,6 +898,7 @@ export const WallFeed = ({
         ) : null}
 
         <div className='mt-3.5 flex flex-wrap items-center gap-3'>
+          <EmojiPicker onSelect={addPostEmoji} />
           <button
             type='button'
             disabled={pending || isUploading || selectedFiles.length >= maxSelectedFiles}

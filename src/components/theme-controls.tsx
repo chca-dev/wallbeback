@@ -30,6 +30,7 @@ export const ThemeControls = ({ mode: initialMode, palette: initialPalette }: Th
   const applyTheme = (nextMode: ThemeMode, nextPalette: ThemePalette) => {
     setMode(nextMode)
     setPalette(nextPalette)
+    setOpen(false)
     startTransition(() => { void saveThemeAction(nextMode, nextPalette) })
   }
 

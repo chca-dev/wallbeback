@@ -1,10 +1,11 @@
 'use client'
 
-import { LogOut, Sparkles } from 'lucide-react'
+import { LogOut } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import { logoutAction } from '@/app/auth-actions'
 import { Avatar } from '@/components/avatar'
 import { DesktopNavigation, MobileNavigation } from '@/components/app-navigation'
+import { BrandLogo } from '@/components/brand-logo'
 import { ThemeControls } from '@/components/theme-controls'
 import type { ThemeMode, ThemePalette, UserRole } from '@/db/schema/enums'
 import type { AvatarTone } from '@/lib/avatar'
@@ -38,16 +39,14 @@ export const AppShell = ({ children, user }: AppShellProps) => {
     <aside className='sticky top-0 hidden h-dvh w-53.5 shrink-0 self-start flex-col overflow-hidden border-r border-border bg-surface px-4 pb-6 pt-7.5 min-[821px]:flex min-[1101px]:w-62 min-[1101px]:px-5.5'>
       <div className='scrollbar-none min-h-0 flex-1 overflow-y-auto pb-6 [&::-webkit-scrollbar]:hidden'>
         <div className='group flex items-center gap-2.5 font-display text-[17px] font-bold tracking-[-0.04em]'>
-          <span className='grid size-7.5 rotate-[-7deg] place-items-center rounded-[10px] bg-primary text-white transition-transform duration-300 group-hover:rotate-0 group-hover:scale-[1.08]'>
-            <Sparkles className='rotate-[7deg] transition-transform duration-300 group-hover:rotate-0' size={17} />
-          </span>
+          <BrandLogo />
           Wall Be Back
         </div>
 
         <div className='mt-11 flex items-center gap-2.5 rounded-[14px] border border-border bg-surface p-2.5'>
-          <span className='grid size-7.75 place-items-center rounded-[9px] bg-primary text-[10px] font-extrabold text-white'>FM</span>
+          <span className='grid size-7.75 shrink-0 place-items-center rounded-[9px] bg-primary text-[10px] font-extrabold text-white'>FM</span>
           <div className='min-w-0 flex-1'>
-            <strong className='block truncate text-xs'>{user.familyName}</strong>
+            <strong className='block break-words text-xs leading-[1.35]'>{user.familyName}</strong>
             <span className='mt-0.5 block text-[10px] text-muted'>Espace privé</span>
           </div>
         </div>
@@ -85,9 +84,7 @@ export const AppShell = ({ children, user }: AppShellProps) => {
     <div className="min-w-0 flex-1">
       <header className="flex h-14 items-center justify-between border-b border-border px-5 min-[821px]:h-16.5 min-[821px]:px-8 min-[1101px]:px-13">
         {pathname === '/wall' ? <p className='font-display text-lg font-semibold tracking-tight min-[821px]:text-[22px]'>Les nouvelles du <span className='text-primary'>front.</span></p> : <div className="group flex items-center gap-2.5 font-display text-[17px] font-bold tracking-[-0.04em] min-[821px]:hidden">
-          <span className="grid size-7.5 rotate-[-7deg] place-items-center rounded-[10px] bg-primary text-white transition-transform duration-300 group-hover:rotate-0 group-hover:scale-[1.08]">
-            <Sparkles className="rotate-[7deg] transition-transform duration-300 group-hover:rotate-0" size={16} />
-          </span>
+          <BrandLogo />
           Wall Be Back
         </div>}
         <div className="flex items-center gap-5.75">

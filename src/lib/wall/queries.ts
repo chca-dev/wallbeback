@@ -1,11 +1,11 @@
 import 'server-only'
 
-import { and, asc, desc, eq, lt, or } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, lt, or } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '@/db/client'
 import type { UserRole } from '@/db/schema/enums'
 import { photos } from '@/db/schema/photos'
-import { posts, replies } from '@/db/schema/wall'
+import { postReactions, posts, replies } from '@/db/schema/wall'
 import type { AvatarTone } from '@/lib/avatar'
 
 export type CursorPage<Item> = {
@@ -39,6 +39,11 @@ export type WallPost = {
     height: number
   }[]
   replies: WallReply[]
+  reactions: {
+    id: string
+    count: number
+    reacted: boolean
+  }[]
   pending?: boolean
   pendingPhotos?: boolean
 }
@@ -103,12 +108,14 @@ const decodeWallCursor = (cursor: string | null) => {
 
 export const getWallPage = async ({
   familyId,
+  currentUserId,
   role,
   cursor = null,
   highlightedPostId = null,
   limit = 20,
 }: {
   familyId: string
+  currentUserId: string
   role: UserRole
   cursor?: string | null
   highlightedPostId?: string | null
@@ -141,6 +148,34 @@ export const getWallPage = async ({
   const pageRows = highlightedPost && !visibleRows.some(({ id }) => id === highlightedPost.id)
     ? [...visibleRows, highlightedPost]
     : visibleRows
+  const pagePostIds = pageRows.map(({ id }) => id)
+  const reactionRows = pagePostIds.length
+    ? await db
+        .select({
+          postId: postReactions.postId,
+          userId: postReactions.userId,
+          reaction: postReactions.reaction,
+        })
+        .from(postReactions)
+        .where(and(
+          eq(postReactions.familyId, familyId),
+          inArray(postReactions.postId, pagePostIds),
+        ))
+    : []
+  const reactionsByPost = new Map<string, Map<string, { count: number, reacted: boolean }>>()
+
+  reactionRows.forEach((reaction) => {
+    const postReactionCounts = reactionsByPost.get(reaction.postId) ?? new Map()
+    const currentReaction = postReactionCounts.get(reaction.reaction) ?? {
+      count: 0,
+      reacted: false,
+    }
+    postReactionCounts.set(reaction.reaction, {
+      count: currentReaction.count + 1,
+      reacted: currentReaction.reacted || reaction.userId === currentUserId,
+    })
+    reactionsByPost.set(reaction.postId, postReactionCounts)
+  })
   const lastRow = visibleRows.at(-1)
   const mapWallPost = (post: typeof pageRows[number]): WallPost => ({
     id: post.id,
@@ -166,6 +201,10 @@ export const getWallPage = async ({
       content: reply.content,
       time: formatDate(reply.createdAt),
     })),
+    reactions: Array.from(reactionsByPost.get(post.id)?.entries() ?? []).map(([
+      id,
+      reaction,
+    ]) => ({ id, ...reaction })),
   })
 
   return {

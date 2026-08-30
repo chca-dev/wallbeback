@@ -40,6 +40,7 @@ const WallPage = async ({ searchParams }: WallPageProps) => {
   const [initialWallPage, familyMembers, familySettings] = await Promise.all([
     getWallPage({
       familyId: currentUser.familyId,
+      currentUserId: currentUser.id,
       role: currentUser.role,
       highlightedPostId: requestedPostId,
     }),
@@ -52,7 +53,7 @@ const WallPage = async ({ searchParams }: WallPageProps) => {
 
   return (
     <div className="mx-auto max-w-310 px-4 pb-24.5 pt-4 min-[521px]:px-5 min-[521px]:pb-25 min-[821px]:px-8 min-[821px]:pb-17.5 min-[1101px]:px-13">
-      {bannerKing ? <WallBanner familyId={currentUser.familyId} kingName={bannerKing.displayName} canChange={currentUser.role === 'admin' || currentUser.id === bannerKing.id} hasBanner={Boolean(familySettings?.bannerStorageKey)} /> : null}
+      {bannerKing ? <WallBanner familyId={currentUser.familyId} canChange={currentUser.role === 'admin' || currentUser.id === bannerKing.id} hasBanner={Boolean(familySettings?.bannerStorageKey)} /> : null}
 
       <div className='mx-auto max-w-170'>
         <section aria-label='Fil familial' className='min-w-0'>

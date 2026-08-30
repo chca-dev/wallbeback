@@ -19,6 +19,7 @@ export const GET = async (request: Request) => {
   try {
     const page = await getWallPage({
       familyId: currentUser.familyId,
+      currentUserId: currentUser.id,
       role: currentUser.role,
       cursor: parsed.data.cursor,
     })

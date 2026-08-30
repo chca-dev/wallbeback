@@ -7,12 +7,11 @@ import { ImageCropDialog, type CropSelection } from '@/components/image-crop-dia
 
 type WallBannerProps = {
   familyId: string
-  kingName: string
   canChange: boolean
   hasBanner: boolean
 }
 
-export const WallBanner = ({ familyId, kingName, canChange, hasBanner }: WallBannerProps) => {
+export const WallBanner = ({ familyId, canChange, hasBanner }: WallBannerProps) => {
   const inputRef = useRef<HTMLInputElement>(null)
   const [version, setVersion] = useState(0)
   const [uploading, setUploading] = useState(false)
@@ -37,7 +36,6 @@ export const WallBanner = ({ familyId, kingName, canChange, hasBanner }: WallBan
       <section className='relative aspect-[4/1] overflow-hidden rounded-[22px] border border-border bg-surface-soft'>
         {hasBanner || version ? <Image src={`/banner/${familyId}?v=${version}`} alt='' fill unoptimized priority sizes='(max-width: 1280px) 100vw, 1136px' className='object-cover' /> : <div className='absolute inset-0 bg-[radial-gradient(circle_at_25%_20%,var(--app-primary-soft),transparent_48%),linear-gradient(135deg,var(--app-surface-soft),var(--app-surface-pink))]' />}
         <div className='absolute inset-0 bg-linear-to-t from-black/75 via-black/10 to-black/25' />
-        <strong className='absolute bottom-2.5 left-3 max-w-[55%] truncate font-display text-base font-semibold text-white min-[521px]:bottom-4 min-[521px]:left-5 min-[521px]:text-xl min-[821px]:bottom-6 min-[821px]:left-7 min-[821px]:text-2xl'>{kingName}</strong>
         {canChange ? <>
           <input ref={inputRef} type='file' accept='image/jpeg,image/png,image/webp' className='sr-only' onChange={(event) => { const file = event.target.files?.[0]; if (file) setCropFile(file); event.target.value = '' }} />
           <button

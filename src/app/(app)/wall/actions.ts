@@ -6,7 +6,7 @@ import { z } from 'zod'
 import { db } from '@/db/client'
 import { postVisibilityValues } from '@/db/schema/enums'
 import { photos } from '@/db/schema/photos'
-import { posts, replies } from '@/db/schema/wall'
+import { postReactions, posts, replies } from '@/db/schema/wall'
 import { requireReadyUser } from '@/lib/auth/session'
 import type { ActionResult } from '@/lib/action-result'
 import { removeProcessedImage } from '@/lib/media/storage'
@@ -43,6 +43,10 @@ const updateReplySchema = z.object({
 
 const postIdSchema = z.object({ postId: z.uuid() })
 const replyIdSchema = z.object({ replyId: z.uuid() })
+const reactionSchema = z.object({
+  postId: z.uuid(),
+  reaction: z.enum(['heart', 'laugh', 'like', 'wow', 'sad', 'celebrate']),
+})
 
 export type WallActionState = ActionResult<'content'> & {
   postId?: string
@@ -191,6 +195,74 @@ export const createReplyAction = async (
   revalidatePath('/wall')
   publishRealtimeEvent(currentUser.familyId, 'wall.updated')
   return { success: true, message: 'Réponse ajoutée.' }
+}
+
+export const togglePostReactionAction = async (
+  postId: string,
+  reaction: string,
+): Promise<ActionResult> => {
+  const currentUser = await requireReadyUser()
+  const parsed = reactionSchema.safeParse({ postId, reaction })
+
+  if (!parsed.success) return { error: 'Réaction invalide.' }
+
+  const accessCondition = currentUser.role === 'child'
+    ? and(
+        eq(posts.id, parsed.data.postId),
+        eq(posts.familyId, currentUser.familyId),
+        eq(posts.visibility, 'family'),
+      )
+    : and(
+        eq(posts.id, parsed.data.postId),
+        eq(posts.familyId, currentUser.familyId),
+      )
+  const [targetPost] = await db
+    .select({ id: posts.id })
+    .from(posts)
+    .where(accessCondition)
+    .limit(1)
+
+  if (!targetPost) return { error: 'Cette publication est introuvable ou inaccessible.' }
+
+  await db.transaction(async (transaction) => {
+    const [currentReaction] = await transaction
+      .select({
+        id: postReactions.id,
+        reaction: postReactions.reaction,
+      })
+      .from(postReactions)
+      .where(and(
+        eq(postReactions.postId, targetPost.id),
+        eq(postReactions.userId, currentUser.id),
+        eq(postReactions.familyId, currentUser.familyId),
+      ))
+      .limit(1)
+
+    if (currentReaction?.reaction === parsed.data.reaction) {
+      await transaction.delete(postReactions).where(eq(postReactions.id, currentReaction.id))
+      return
+    }
+
+    await transaction
+      .insert(postReactions)
+      .values({
+        familyId: currentUser.familyId,
+        postId: targetPost.id,
+        userId: currentUser.id,
+        reaction: parsed.data.reaction,
+      })
+      .onConflictDoUpdate({
+        target: [postReactions.postId, postReactions.userId],
+        set: {
+          reaction: parsed.data.reaction,
+          updatedAt: new Date(),
+        },
+      })
+  })
+
+  revalidatePath('/wall')
+  publishRealtimeEvent(currentUser.familyId, 'wall.updated')
+  return { success: true }
 }
 
 export const updatePostAction = async (
