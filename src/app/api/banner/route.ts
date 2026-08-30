@@ -11,6 +11,7 @@ import { serverEnvironment } from '@/lib/env'
 import { getBannerKing } from '@/lib/banner-rotation'
 import { isMediaProcessingError, processBannerImage } from '@/lib/media/process-image'
 import { removeBannerImage, writeBannerImage } from '@/lib/media/storage'
+import { validateMultipartUploadRequest } from '@/lib/media/upload-request'
 
 export const runtime = 'nodejs'
 const cropSchema = z.object({ x: z.number().min(0).max(100), y: z.number().min(0).max(100), width: z.number().positive().max(100), height: z.number().positive().max(100) }).refine((crop) => crop.x + crop.width <= 100.01 && crop.y + crop.height <= 100.01)
@@ -24,8 +25,11 @@ export const POST = async (request: Request) => {
   const currentUser = await getCurrentUser()
   if (!currentUser) return NextResponse.json({ message: 'Non autorisé.' }, { status: 401 })
   if (currentUser.mustChangePassword) return NextResponse.json({ message: 'Change ton mot de passe avant de modifier la bannière.' }, { status: 403 })
-  const contentLength = Number(request.headers.get('content-length'))
-  if (Number.isFinite(contentLength) && contentLength > serverEnvironment.MAX_UPLOAD_BYTES + multipartOverheadBytes) return NextResponse.json({ message: 'Cette image est trop lourde.' }, { status: 413 })
+  const uploadError = validateMultipartUploadRequest(request, {
+    maxBodyBytes: serverEnvironment.MAX_UPLOAD_BYTES + multipartOverheadBytes,
+    tooLargeMessage: 'Cette image est trop lourde.',
+  })
+  if (uploadError) return NextResponse.json({ message: uploadError.message }, { status: uploadError.status })
   const familyMembers = await db.select({ id: users.id, createdAt: users.createdAt }).from(users)
     .where(and(eq(users.familyId, currentUser.familyId), eq(users.isActive, true)))
     .orderBy(asc(users.createdAt), asc(users.id))
@@ -47,11 +51,14 @@ export const POST = async (request: Request) => {
     await writeBannerImage(storageKey, banner)
     await db.insert(settings).values({ familyId: currentUser.familyId, bannerStorageKey: storageKey })
       .onConflictDoUpdate({ target: settings.familyId, set: { bannerStorageKey: storageKey } })
-    if (existingSettings?.bannerStorageKey) await removeBannerImage(existingSettings.bannerStorageKey)
-    revalidatePath('/wall')
-    return NextResponse.json({ success: true })
   } catch (error) {
     await removeBannerImage(storageKey).catch(() => undefined)
     return NextResponse.json({ message: isMediaProcessingError(error) ? error.message : 'La bannière n’a pas été enregistrée.' }, { status: 422 })
   }
+
+  if (existingSettings?.bannerStorageKey && existingSettings.bannerStorageKey !== storageKey) {
+    await removeBannerImage(existingSettings.bannerStorageKey).catch(() => undefined)
+  }
+  revalidatePath('/wall')
+  return NextResponse.json({ success: true })
 }

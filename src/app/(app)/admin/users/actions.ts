@@ -64,21 +64,6 @@ const revalidateUserViews = () => {
   revalidatePath('/family')
 }
 
-const getActiveAdminCount = async (familyId: string) => {
-  const [result] = await db
-    .select({ value: count() })
-    .from(users)
-    .where(
-      and(
-        eq(users.familyId, familyId),
-        eq(users.role, 'admin'),
-        eq(users.isActive, true),
-      ),
-    )
-
-  return result.value
-}
-
 const findIdentityConflict = async (
   familyId: string,
   username: string,
@@ -181,15 +166,6 @@ export const updateUserAction = async (
   }
 
   if (
-    target.role === 'admin'
-    && target.isActive
-    && parsed.data.role !== 'admin'
-    && await getActiveAdminCount(currentAdmin.familyId) <= 1
-  ) {
-    return { error: 'Le dernier administrateur actif doit conserver son rôle.' }
-  }
-
-  if (
     await findIdentityConflict(
       currentAdmin.familyId,
       parsed.data.username,
@@ -200,7 +176,30 @@ export const updateUserAction = async (
     return { error: 'Cet email ou cet identifiant est déjà utilisé.' }
   }
 
-  await db.transaction(async (transaction) => {
+  const transactionError = await db.transaction(async (transaction) => {
+    await transaction.execute(
+      sql`select pg_advisory_xact_lock(hashtextextended(${currentAdmin.familyId}, 0))`,
+    )
+
+    if (
+      target.role === 'admin'
+      && target.isActive
+      && parsed.data.role !== 'admin'
+    ) {
+      const [adminCount] = await transaction
+        .select({ value: count() })
+        .from(users)
+        .where(and(
+          eq(users.familyId, currentAdmin.familyId),
+          eq(users.role, 'admin'),
+          eq(users.isActive, true),
+        ))
+
+      if (adminCount.value <= 1) {
+        return 'Le dernier administrateur actif doit conserver son rôle.'
+      }
+    }
+
     await transaction
       .update(users)
       .set({
@@ -218,7 +217,11 @@ export const updateUserAction = async (
         eq(sessions.familyId, currentAdmin.familyId),
       ))
     }
+
+    return null
   })
+
+  if (transactionError) return { error: transactionError }
 
   revalidateUserViews()
   return { success: true, message: 'Profil mis à jour.' }
@@ -259,15 +262,26 @@ export const toggleUserStatusAction = async (
     return { error: 'Tu ne peux pas désactiver ton propre compte.' }
   }
 
-  if (
-    target.isActive
-    && target.role === 'admin'
-    && await getActiveAdminCount(currentAdmin.familyId) <= 1
-  ) {
-    return { error: 'Le dernier administrateur actif ne peut pas être désactivé.' }
-  }
+  const transactionError = await db.transaction(async (transaction) => {
+    await transaction.execute(
+      sql`select pg_advisory_xact_lock(hashtextextended(${currentAdmin.familyId}, 0))`,
+    )
 
-  await db.transaction(async (transaction) => {
+    if (target.isActive && target.role === 'admin') {
+      const [adminCount] = await transaction
+        .select({ value: count() })
+        .from(users)
+        .where(and(
+          eq(users.familyId, currentAdmin.familyId),
+          eq(users.role, 'admin'),
+          eq(users.isActive, true),
+        ))
+
+      if (adminCount.value <= 1) {
+        return 'Le dernier administrateur actif ne peut pas être désactivé.'
+      }
+    }
+
     await transaction
       .update(users)
       .set({ isActive: !target.isActive })
@@ -279,7 +293,11 @@ export const toggleUserStatusAction = async (
         eq(sessions.familyId, currentAdmin.familyId),
       ))
     }
+
+    return null
   })
+
+  if (transactionError) return { error: transactionError }
 
   revalidateUserViews()
   return {

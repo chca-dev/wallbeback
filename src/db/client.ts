@@ -2,6 +2,7 @@ import { drizzle } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 import { events } from '@/db/schema/events'
 import { families } from '@/db/schema/families'
+import { loginRateLimits } from '@/db/schema/login-rate-limits'
 import { photoPeople, photos } from '@/db/schema/photos'
 import {
   eventRelations,
@@ -25,6 +26,7 @@ const schema = {
   eventRelations,
   families,
   familyRelations,
+  loginRateLimits,
   photoPeople,
   photoPeopleRelations,
   photos,

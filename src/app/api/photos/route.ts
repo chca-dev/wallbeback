@@ -12,6 +12,7 @@ import {
   isMediaProcessingError,
   processImage,
 } from '@/lib/media/process-image'
+import { validateMultipartUploadRequest } from '@/lib/media/upload-request'
 
 const multipartOverheadBytes = 1024 * 1024
 const postIdSchema = z.uuid()
@@ -41,15 +42,15 @@ export const POST = async (request: Request) => {
     )
   }
 
-  const contentLength = Number(request.headers.get('content-length'))
+  const uploadError = validateMultipartUploadRequest(request, {
+    maxBodyBytes: serverEnvironment.MAX_UPLOAD_BYTES + multipartOverheadBytes,
+    tooLargeMessage: fileTooLargeMessage,
+  })
 
-  if (
-    Number.isFinite(contentLength) &&
-    contentLength > serverEnvironment.MAX_UPLOAD_BYTES + multipartOverheadBytes
-  ) {
+  if (uploadError) {
     return NextResponse.json(
-      { message: fileTooLargeMessage },
-      { status: 413 },
+      { message: uploadError.message },
+      { status: uploadError.status },
     )
   }
 

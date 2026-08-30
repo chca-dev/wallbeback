@@ -1,10 +1,13 @@
 'use server'
 
+import { createHmac } from 'node:crypto'
 import bcrypt from 'bcryptjs'
 import { and, eq, ne, or, sql } from 'drizzle-orm'
+import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
 import { db } from '@/db/client'
+import { loginRateLimits } from '@/db/schema/login-rate-limits'
 import { sessions } from '@/db/schema/sessions'
 import { users } from '@/db/schema/users'
 import {
@@ -13,8 +16,9 @@ import {
   revokeCurrentSession,
 } from '@/lib/auth/session'
 import type { ActionResult } from '@/lib/action-result'
+import { serverEnvironment } from '@/lib/env'
 
-const maximumLoginAttempts = 5
+const maximumLoginAttempts = 10
 const loginLockMilliseconds = 15 * 60 * 1000
 
 const loginSchema = z.object({
@@ -56,6 +60,72 @@ const getFieldErrors = <Field extends string>(error: z.ZodError) => {
   return fieldErrors
 }
 
+const getLoginRateLimitKey = async () => {
+  const requestHeaders = await headers()
+  const forwardedAddress = requestHeaders.get('x-forwarded-for')
+    ?.split(',')[0]
+    ?.trim()
+  const clientAddress = forwardedAddress
+    || requestHeaders.get('x-real-ip')?.trim()
+    || 'unknown'
+
+  return createHmac('sha256', serverEnvironment.SESSION_SECRET)
+    .update(clientAddress)
+    .digest('hex')
+}
+
+const isLoginRateLimited = async (keyHash: string) => {
+  const rateLimit = await db.query.loginRateLimits.findFirst({
+    where: eq(loginRateLimits.keyHash, keyHash),
+    columns: { blockedUntil: true },
+  })
+
+  return Boolean(rateLimit?.blockedUntil && rateLimit.blockedUntil > new Date())
+}
+
+const recordLoginFailure = async (keyHash: string) => db.transaction(async (transaction) => {
+  await transaction.execute(
+    sql`select pg_advisory_xact_lock(hashtextextended(${keyHash}, 0))`,
+  )
+
+  const now = new Date()
+  const windowCutoff = new Date(now.getTime() - loginLockMilliseconds)
+  const [rateLimit] = await transaction
+    .select()
+    .from(loginRateLimits)
+    .where(eq(loginRateLimits.keyHash, keyHash))
+    .limit(1)
+
+  if (rateLimit?.blockedUntil && rateLimit.blockedUntil > now) {
+    return true
+  }
+
+  const windowIsActive = Boolean(rateLimit && rateLimit.windowStartedAt > windowCutoff)
+  const attemptCount = windowIsActive ? rateLimit!.attemptCount + 1 : 1
+  const shouldBlock = attemptCount >= maximumLoginAttempts
+
+  await transaction
+    .insert(loginRateLimits)
+    .values({
+      keyHash,
+      attemptCount: shouldBlock ? 0 : attemptCount,
+      windowStartedAt: now,
+      blockedUntil: shouldBlock ? new Date(now.getTime() + loginLockMilliseconds) : null,
+      updatedAt: now,
+    })
+    .onConflictDoUpdate({
+      target: loginRateLimits.keyHash,
+      set: {
+        attemptCount: shouldBlock ? 0 : attemptCount,
+        windowStartedAt: windowIsActive ? rateLimit!.windowStartedAt : now,
+        blockedUntil: shouldBlock ? new Date(now.getTime() + loginLockMilliseconds) : null,
+        updatedAt: now,
+      },
+    })
+
+  return shouldBlock
+})
+
 export const loginAction = async (
   _previousState: LoginActionState,
   formData: FormData,
@@ -69,6 +139,12 @@ export const loginAction = async (
     return { fieldErrors: getFieldErrors<LoginField>(parsed.error) }
   }
 
+  const rateLimitKey = await getLoginRateLimitKey()
+
+  if (await isLoginRateLimited(rateLimitKey)) {
+    return { error: 'Trop de tentatives. Réessaie dans quelques minutes.' }
+  }
+
   const normalizedIdentity = parsed.data.identity.toLowerCase()
   const [account] = await db
     .select({
@@ -77,8 +153,6 @@ export const loginAction = async (
       passwordHash: users.passwordHash,
       isActive: users.isActive,
       mustChangePassword: users.mustChangePassword,
-      failedLoginAttempts: users.failedLoginAttempts,
-      lockedUntil: users.lockedUntil,
     })
     .from(users)
     .where(
@@ -90,30 +164,22 @@ export const loginAction = async (
     .limit(1)
 
   if (!account || !account.isActive) {
-    return { error: 'Identifiant ou mot de passe incorrect.' }
-  }
-
-  if (account.lockedUntil && account.lockedUntil > new Date()) {
-    return { error: 'Compte temporairement verrouillé. Réessaie dans quelques minutes.' }
+    const blocked = await recordLoginFailure(rateLimitKey)
+    return {
+      error: blocked
+        ? 'Trop de tentatives. Réessaie dans quelques minutes.'
+        : 'Identifiant ou mot de passe incorrect.',
+    }
   }
 
   const passwordMatches = await bcrypt.compare(parsed.data.password, account.passwordHash)
 
   if (!passwordMatches) {
-    const nextAttemptCount = account.failedLoginAttempts + 1
-    const shouldLock = nextAttemptCount >= maximumLoginAttempts
-
-    await db
-      .update(users)
-      .set({
-        failedLoginAttempts: shouldLock ? 0 : nextAttemptCount,
-        lockedUntil: shouldLock ? new Date(Date.now() + loginLockMilliseconds) : null,
-      })
-      .where(eq(users.id, account.id))
+    const blocked = await recordLoginFailure(rateLimitKey)
 
     return {
-      error: shouldLock
-        ? 'Compte temporairement verrouillé après plusieurs échecs.'
+      error: blocked
+        ? 'Trop de tentatives. Réessaie dans quelques minutes.'
         : 'Identifiant ou mot de passe incorrect.',
     }
   }
