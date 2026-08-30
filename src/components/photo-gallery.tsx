@@ -35,7 +35,8 @@ export const PhotoGallery = ({
 
   const photos = useMemo(() => person === 'all'
     ? allPhotos
-    : allPhotos.filter((photo) => photo.people.includes(person)), [allPhotos, person])
+    : allPhotos.filter((photo) => photo.ownerId === person), [allPhotos, person])
+  const filterMembers = members.filter((member) => member.photoCount > 0)
   const activeIndex = activePhotoId === null
     ? -1
     : photos.findIndex((photo) => photo.id === activePhotoId)
@@ -135,7 +136,7 @@ export const PhotoGallery = ({
       {allPhotos.length ? (
         <div
           role='tablist'
-          aria-label='Filtrer par personne'
+          aria-label='Filtrer selon la personne qui a ajouté la photo'
           className='mb-4 flex items-center gap-[5px] overflow-x-auto pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden min-[521px]:mb-5 min-[521px]:flex-wrap min-[521px]:gap-[7px] min-[521px]:overflow-visible min-[521px]:pb-0'
         >
           <button
@@ -156,7 +157,7 @@ export const PhotoGallery = ({
               {allPhotos.length}
             </span>
           </button>
-          {members.map((member) => {
+          {filterMembers.map((member) => {
             const active = person === member.id
 
             return (

@@ -17,6 +17,7 @@ export type PhotoGalleryMember = {
 
 export type PhotoGalleryItem = {
   id: string
+  ownerId: string
   displayUrl: string
   thumbUrl: string
   postUrl: string
@@ -66,6 +67,7 @@ export const getPhotoGalleryData = async (
     db
       .select({
         id: photos.id,
+        ownerId: photos.ownerId,
         postId: posts.id,
         caption: photos.caption,
         takenAt: photos.takenAt,
@@ -123,11 +125,14 @@ export const getPhotoGalleryData = async (
   const photoCountByMember = new Map<string, number>()
   const visiblePhotoIds = new Set(photoRows.map(({ id }) => id))
 
+  photoRows.forEach(({ ownerId }) => {
+    photoCountByMember.set(ownerId, (photoCountByMember.get(ownerId) ?? 0) + 1)
+  })
+
   tagRows.forEach(({ photoId, userId }) => {
     if (!visiblePhotoIds.has(photoId)) return
 
     peopleByPhoto.set(photoId, [...(peopleByPhoto.get(photoId) ?? []), userId])
-    photoCountByMember.set(userId, (photoCountByMember.get(userId) ?? 0) + 1)
   })
 
   return {
@@ -140,6 +145,7 @@ export const getPhotoGalleryData = async (
     })),
     photos: photoRows.map((photo) => ({
       id: photo.id,
+      ownerId: photo.ownerId,
       displayUrl: `/media/${photo.id}/display`,
       thumbUrl: `/media/${photo.id}/thumb`,
       postUrl: `/wall?post=${photo.postId}#post-${photo.postId}`,

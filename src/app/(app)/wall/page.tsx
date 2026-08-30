@@ -126,8 +126,8 @@ const WallPage = async ({ searchParams }: WallPageProps) => {
     <div className="mx-auto max-w-[1240px] px-4 pb-[98px] pt-4 min-[521px]:px-5 min-[521px]:pb-[100px] min-[821px]:px-8 min-[821px]:pb-[70px] min-[1101px]:px-[52px]">
       {bannerKing ? <WallBanner familyId={currentUser.familyId} kingName={bannerKing.displayName} canChange={currentUser.role === 'admin' || currentUser.id === bannerKing.id} hasBanner={Boolean(familySettings?.bannerStorageKey)} /> : null}
 
-      <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,680px)_minmax(230px,290px)] lg:gap-12">
-        <section aria-label="Fil familial" className="min-w-0">
+      <div className='mx-auto max-w-[680px]'>
+        <section aria-label='Fil familial' className='min-w-0'>
           <WallFeed
             maxUploadBytes={serverEnvironment.MAX_UPLOAD_BYTES}
             posts={wallPosts}
@@ -142,10 +142,6 @@ const WallPage = async ({ searchParams }: WallPageProps) => {
             }}
           />
         </section>
-        <aside className="sticky top-28 hidden rounded-card border border-border bg-surface p-5 lg:block">
-          <p className="font-display text-sm font-semibold">Un espace vraiment privé</p>
-          <p className="mt-3 text-xs leading-6 text-muted">Seuls les membres invités par l’administrateur peuvent lire et écrire ici. Les publications marquées « Adultes » restent invisibles aux comptes enfants.</p>
-        </aside>
       </div>
     </div>
   )
