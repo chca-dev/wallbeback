@@ -60,7 +60,7 @@ jobs:
           retention-days: 7
 
       - name: Deploy to Wall Be Back Alwaysdata site
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.WALLBEBACK_DEPLOY_ENABLED == 'true'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           ALWAYSDATA_SSH_PRIVATE_KEY: ${{ secrets.WALLBEBACK_SSH_PRIVATE_KEY }}
           ALWAYSDATA_API_KEY: ${{ secrets.WALLBEBACK_ALWAYSDATA_API_KEY }}
