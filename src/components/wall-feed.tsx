@@ -1,13 +1,14 @@
 'use client'
 
+import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query'
 import Image from 'next/image'
-import { useRouter } from 'next/navigation'
 import {
   Check,
   ImagePlus,
   LoaderCircle,
   Lock,
   MessageCircle,
+  SquarePen,
   Pencil,
   Send,
   Trash2,
@@ -22,42 +23,16 @@ import {
   deleteReplyAction,
   updatePostAction,
   updateReplyAction,
+  finalizePostAction,
   type WallActionState,
 } from '@/app/(app)/wall/actions'
 import { Avatar } from '@/components/avatar'
 import type { AvatarTone } from '@/lib/avatar'
-
-export type WallReply = {
-  id: string
-  authorId: string
-  author: string
-  tone: AvatarTone
-  avatarUrl: string | null
-  content: string
-  time: string
-}
-
-export type WallPost = {
-  id: string
-  authorId: string
-  author: string
-  tone: AvatarTone
-  avatarUrl: string | null
-  content: string
-  time: string
-  adultsOnly?: boolean
-  photos: {
-    id: string
-    displayUrl: string
-    width: number
-    height: number
-  }[]
-  replies: WallReply[]
-}
+import type { CursorPage, WallPost, WallReply } from '@/lib/wall/queries'
 
 type WallFeedProps = {
   maxUploadBytes: number
-  posts: WallPost[]
+  initialPage: CursorPage<WallPost>
   currentUser: {
     id: string
     displayName: string
@@ -67,6 +42,14 @@ type WallFeedProps = {
     isAdmin: boolean
     canPublishAdults: boolean
   }
+}
+
+const fetchWallPage = async (cursor: string | null) => {
+  const searchParams = new URLSearchParams()
+  if (cursor) searchParams.set('cursor', cursor)
+  const response = await fetch(`/api/wall?${searchParams.toString()}`)
+  if (!response.ok) throw new Error('Le mur n’a pas pu être actualisé.')
+  return response.json() as Promise<CursorPage<WallPost>>
 }
 
 const initialState: WallActionState = {}
@@ -104,6 +87,7 @@ const ReplyForm = ({ postId, currentUser, onClose }: {
   currentUser: WallFeedProps['currentUser']
   onClose: () => void
 }) => {
+  const queryClient = useQueryClient()
   const [content, setContent] = useState('')
   const submitReply = async (
     previousState: WallActionState,
@@ -112,6 +96,7 @@ const ReplyForm = ({ postId, currentUser, onClose }: {
     const nextState = await createReplyAction(previousState, formData)
 
     if (nextState.success) {
+      await queryClient.invalidateQueries({ queryKey: ['wall'] })
       setContent('')
       onClose()
     }
@@ -147,10 +132,16 @@ const ReplyItem = ({ reply, currentUser }: {
   reply: WallReply
   currentUser: WallFeedProps['currentUser']
 }) => {
+  const queryClient = useQueryClient()
   const canManage = currentUser.isAdmin || reply.authorId === currentUser.id
   const [editing, setEditing] = useState(false)
   const [content, setContent] = useState(reply.content)
-  const [deleteState, deleteAction, deletePending] = useActionState(deleteReplyAction, initialState)
+  const submitDelete = async (previousState: WallActionState, formData: FormData) => {
+    const nextState = await deleteReplyAction(previousState, formData)
+    if (nextState.success) await queryClient.invalidateQueries({ queryKey: ['wall'] })
+    return nextState
+  }
+  const [deleteState, deleteAction, deletePending] = useActionState(submitDelete, initialState)
   const submitUpdate = async (
     previousState: WallActionState,
     formData: FormData,
@@ -158,6 +149,7 @@ const ReplyItem = ({ reply, currentUser }: {
     const nextState = await updateReplyAction(previousState, formData)
 
     if (nextState.success) {
+      await queryClient.invalidateQueries({ queryKey: ['wall'] })
       setEditing(false)
     }
 
@@ -225,11 +217,22 @@ const ReplyItem = ({ reply, currentUser }: {
 }
 
 const PostCard = ({ post, currentUser }: { post: WallPost, currentUser: WallFeedProps['currentUser'] }) => {
+  const queryClient = useQueryClient()
   const [replying, setReplying] = useState(false)
   const [editing, setEditing] = useState(false)
   const [content, setContent] = useState(post.content)
-  const [deleteState, deleteAction, deletePending] = useActionState(deletePostAction, initialState)
-  const canManage = currentUser.isAdmin || post.authorId === currentUser.id
+  const submitDelete = async (previousState: WallActionState, formData: FormData) => {
+    const nextState = await deletePostAction(previousState, formData)
+    if (nextState.success) {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['wall'] }),
+        queryClient.invalidateQueries({ queryKey: ['photos'] }),
+      ])
+    }
+    return nextState
+  }
+  const [deleteState, deleteAction, deletePending] = useActionState(submitDelete, initialState)
+  const canManage = !post.pending && (currentUser.isAdmin || post.authorId === currentUser.id)
   const submitUpdate = async (
     previousState: WallActionState,
     formData: FormData,
@@ -237,6 +240,7 @@ const PostCard = ({ post, currentUser }: { post: WallPost, currentUser: WallFeed
     const nextState = await updatePostAction(previousState, formData)
 
     if (nextState.success) {
+      await queryClient.invalidateQueries({ queryKey: ['wall'] })
       setEditing(false)
     }
 
@@ -279,6 +283,11 @@ const PostCard = ({ post, currentUser }: { post: WallPost, currentUser: WallFeed
           </div>
         ) : null}
       </header>
+      {post.pending ? (
+        <p role='status' className='mt-3 text-xs font-semibold text-primary-strong'>
+          {post.pendingPhotos ? 'Enregistrement et optimisation des photos…' : 'Publication en cours…'}
+        </p>
+      ) : null}
       {editing ? (
         <form action={updateAction} className="mb-4 mt-4.5">
           <input type="hidden" name="postId" value={post.id} />
@@ -356,7 +365,6 @@ const PostCard = ({ post, currentUser }: { post: WallPost, currentUser: WallFeed
 }
 
 type PhotoMessage = {
-  tone: 'error' | 'success'
   text: string
 }
 
@@ -417,30 +425,75 @@ const SelectedPhotoPreview = ({
 
 export const WallFeed = ({
   maxUploadBytes,
-  posts,
+  initialPage,
   currentUser,
 }: WallFeedProps) => {
-  const router = useRouter()
+  const queryClient = useQueryClient()
   const photoInputRef = useRef<HTMLInputElement>(null)
   const handledPostIdRef = useRef<string | null>(null)
   const [content, setContent] = useState('')
   const [adultsOnly, setAdultsOnly] = useState(false)
+  const [composerOpen, setComposerOpen] = useState(false)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [photoMessage, setPhotoMessage] = useState<PhotoMessage | null>(null)
+  const [optimisticPost, setOptimisticPost] = useState<WallPost | null>(null)
+  const [newPostCount, setNewPostCount] = useState(0)
   const [uploadProgress, setUploadProgress] = useState<{
     completed: number
     total: number
   } | null>(null)
+  const wallQuery = useInfiniteQuery({
+    queryKey: ['wall'],
+    queryFn: ({ pageParam }) => fetchWallPage(pageParam),
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
+    initialData: { pages: [initialPage], pageParams: [null] },
+  })
+  const loadedPosts = wallQuery.data?.pages.flatMap((page) => page.items) ?? []
+  const seenPostIds = new Set<string>()
+  const posts = [optimisticPost, ...loadedPosts]
+    .filter((post): post is WallPost => Boolean(post))
+    .filter((post) => {
+      if (seenPostIds.has(post.id)) return false
+      seenPostIds.add(post.id)
+      return true
+    })
   const submitPost = async (
     previousState: WallActionState,
     formData: FormData,
   ) => {
+    setOptimisticPost({
+      id: crypto.randomUUID(),
+      authorId: currentUser.id,
+      author: currentUser.displayName,
+      tone: currentUser.avatarTone,
+      avatarUrl: currentUser.avatarUrl,
+      content,
+      time: 'À l’instant',
+      adultsOnly,
+      photos: [],
+      replies: [],
+      pending: true,
+      pendingPhotos: selectedFiles.length > 0,
+    })
     const nextState = await createPostAction(previousState, formData)
 
-    if (nextState.success && formData.get('hasPhotos') !== 'true') {
+    if (!nextState.success || !nextState.postId) {
+      setOptimisticPost(null)
+      return nextState
+    }
+
+    setOptimisticPost((currentPost) => currentPost
+      ? { ...currentPost, id: nextState.postId as string }
+      : null)
+
+    if (formData.get('hasPhotos') !== 'true') {
+      await queryClient.invalidateQueries({ queryKey: ['wall'] })
+      setOptimisticPost(null)
       setContent('')
       setAdultsOnly(false)
       setPhotoMessage(null)
+      setComposerOpen(false)
     }
 
     return nextState
@@ -493,33 +546,35 @@ export const WallFeed = ({
 
       if (cancelled) return
 
+      let postDeleted = false
+
       if (!uploadedCount && !publishedContent.trim()) {
         const deleteFormData = new FormData()
         deleteFormData.append('postId', state.postId as string)
         const deletionState = await deletePostAction(initialState, deleteFormData)
+        postDeleted = Boolean(deletionState.success)
         setPhotoMessage({
-          tone: 'error',
           text: deletionState.error
             ? `Aucune photo n’a pu être ajoutée. ${deletionState.error}`
             : 'Aucune photo n’a pu être ajoutée. La publication vide a été supprimée.',
         })
       } else if (errors.length) {
         setPhotoMessage({
-          tone: 'error',
           text: `${uploadedCount} photo${uploadedCount > 1 ? 's' : ''} ajoutée${uploadedCount > 1 ? 's' : ''}. ${errors.length} envoi${errors.length > 1 ? 's' : ''} a échoué.`,
-        })
-      } else {
-        setPhotoMessage({
-          tone: 'success',
-          text: `Publication et ${uploadedCount} photo${uploadedCount > 1 ? 's' : ''} ajoutées.`,
         })
       }
 
-      router.refresh()
+      if (!postDeleted) await finalizePostAction(state.postId as string)
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['wall'] }),
+        queryClient.invalidateQueries({ queryKey: ['photos'] }),
+      ])
+      setOptimisticPost(null)
       setSelectedFiles([])
       setContent('')
       setAdultsOnly(false)
       setUploadProgress(null)
+      if (!errors.length && !postDeleted) setComposerOpen(false)
     }
 
     void uploadPhotos()
@@ -527,7 +582,26 @@ export const WallFeed = ({
     return () => {
       cancelled = true
     }
-  }, [content, router, selectedFiles, state.postId, state.success])
+  }, [content, queryClient, selectedFiles, state.postId, state.success])
+
+  useEffect(() => {
+    const onWallUpdated = () => {
+      if (window.scrollY > 320) {
+        setNewPostCount((currentCount) => currentCount + 1)
+        return
+      }
+      void queryClient.invalidateQueries({ queryKey: ['wall'] })
+    }
+
+    window.addEventListener('wall-be-back:wall-updated', onWallUpdated)
+    return () => window.removeEventListener('wall-be-back:wall-updated', onWallUpdated)
+  }, [queryClient])
+
+  const showNewPosts = async () => {
+    await queryClient.invalidateQueries({ queryKey: ['wall'] })
+    setNewPostCount(0)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
   const selectPhotos = (event: ChangeEvent<HTMLInputElement>) => {
     const newFiles = Array.from(event.target.files ?? [])
@@ -537,7 +611,6 @@ export const WallFeed = ({
 
     if (selectedFiles.length + newFiles.length > maxSelectedFiles) {
       setPhotoMessage({
-        tone: 'error',
         text: `Ajoute au maximum ${maxSelectedFiles} photos par publication.`,
       })
       return
@@ -549,7 +622,6 @@ export const WallFeed = ({
 
     if (unsupportedFile) {
       setPhotoMessage({
-        tone: 'error',
         text: `${unsupportedFile.name} n’est pas un fichier JPEG, PNG ou WebP.`,
       })
       return
@@ -559,7 +631,6 @@ export const WallFeed = ({
 
     if (oversizedFile) {
       setPhotoMessage({
-        tone: 'error',
         text: `${oversizedFile.name} dépasse la limite de ${maxUploadMegabytes} Mo.`,
       })
       return
@@ -574,8 +645,28 @@ export const WallFeed = ({
     setPhotoMessage(null)
   }
 
+  const closeComposer = () => {
+    setComposerOpen(false)
+    setContent('')
+    setAdultsOnly(false)
+    setSelectedFiles([])
+    setPhotoMessage(null)
+  }
+
   return (
     <>
+      {!composerOpen ? (
+        <div className='mb-6 flex justify-end'>
+          <button
+            type='button'
+            onClick={() => setComposerOpen(true)}
+            className='inline-flex items-center gap-2 rounded-[12px] bg-primary px-4 py-3 font-display text-sm font-semibold text-white shadow-card transition-[transform,background-color] hover:-translate-y-px hover:bg-primary-strong'
+          >
+            Blablater
+            <SquarePen size={15} />
+          </button>
+        </div>
+      ) : (
       <form
         action={formAction}
         className={`mb-6 rounded-card border bg-surface p-5 transition-colors ${adultsOnly ? 'border-secondary-soft' : 'border-border'}`}
@@ -670,15 +761,37 @@ export const WallFeed = ({
         ) : null}
         {photoMessage ? (
           <p
-            role={photoMessage.tone === 'error' ? 'alert' : 'status'}
+            role='alert'
             aria-live='polite'
-            className={`mt-3 text-xs font-semibold ${photoMessage.tone === 'error' ? 'text-danger' : 'text-success'}`}
+            className='mt-3 text-xs font-semibold text-danger'
           >
             {photoMessage.text}
           </p>
         ) : null}
-        <Feedback state={state} hideSuccess={isUploading || photoMessage !== null} />
+        <Feedback state={state} hideSuccess />
+        {!pending && !isUploading ? (
+          <button
+            type='button'
+            onClick={closeComposer}
+            className='mt-3 text-xs font-semibold text-muted transition-colors hover:text-foreground'
+          >
+            Annuler
+          </button>
+        ) : null}
       </form>
+      )}
+
+      {newPostCount ? (
+        <div className='sticky top-3 z-20 mb-5 flex justify-center'>
+          <button
+            type='button'
+            onClick={() => void showNewPosts()}
+            className='animate-fade-up rounded-full border border-primary-soft bg-surface px-4 py-2 text-xs font-semibold text-primary-strong shadow-card'
+          >
+            {newPostCount} nouvelle{newPostCount > 1 ? 's' : ''} publication{newPostCount > 1 ? 's' : ''}
+          </button>
+        </div>
+      ) : null}
 
       <div>
         {posts.length ? posts.map((post) => (
@@ -690,6 +803,23 @@ export const WallFeed = ({
           </div>
         )}
       </div>
+      {wallQuery.hasNextPage ? (
+        <div className='flex justify-center pb-4'>
+          <button
+            type='button'
+            disabled={wallQuery.isFetchingNextPage}
+            onClick={() => void wallQuery.fetchNextPage()}
+            className='min-h-10 rounded-control border border-border bg-surface px-5 text-xs font-semibold text-muted transition-colors hover:border-primary-soft hover:text-foreground disabled:opacity-50'
+          >
+            {wallQuery.isFetchingNextPage ? 'Chargement…' : 'Voir les publications précédentes'}
+          </button>
+        </div>
+      ) : null}
+      {wallQuery.isError ? (
+        <p role='alert' className='pb-4 text-center text-sm font-semibold text-danger'>
+          Le mur n’a pas pu être actualisé.
+        </p>
+      ) : null}
     </>
   )
 }

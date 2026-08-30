@@ -9,6 +9,7 @@ import { events } from '@/db/schema/events'
 import { users } from '@/db/schema/users'
 import { requireReadyUser } from '@/lib/auth/session'
 import type { ActionResult } from '@/lib/action-result'
+import { publishRealtimeEvent } from '@/lib/realtime/events'
 
 export type CalendarActionState = ActionResult
 
@@ -118,6 +119,7 @@ export const createEventAction = async (
   })
 
   revalidatePath('/calendar')
+  publishRealtimeEvent(currentUser.familyId, 'calendar.updated')
   return { success: true, message: 'Événement ajouté.' }
 }
 
@@ -153,6 +155,7 @@ export const updateEventAction = async (
   }).where(and(eq(events.id, target.id), eq(events.familyId, currentUser.familyId)))
 
   revalidatePath('/calendar')
+  publishRealtimeEvent(currentUser.familyId, 'calendar.updated')
   return { success: true, message: 'Événement modifié.' }
 }
 
@@ -170,5 +173,6 @@ export const deleteEventAction = async (
 
   await db.delete(events).where(and(eq(events.id, target.id), eq(events.familyId, currentUser.familyId)))
   revalidatePath('/calendar')
+  publishRealtimeEvent(currentUser.familyId, 'calendar.updated')
   return { success: true, message: 'Événement supprimé.' }
 }

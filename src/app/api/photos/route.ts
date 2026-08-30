@@ -13,9 +13,14 @@ import {
   processImage,
 } from '@/lib/media/process-image'
 import { validateMultipartUploadRequest } from '@/lib/media/upload-request'
+import { getPhotoGalleryPage } from '@/lib/photos/queries'
 
 const multipartOverheadBytes = 1024 * 1024
 const postIdSchema = z.uuid()
+const galleryRequestSchema = z.object({
+  cursor: z.string().max(512).nullable(),
+  memberId: z.uuid().nullable(),
+})
 const maxUploadMegabytes = Math.round(
   serverEnvironment.MAX_UPLOAD_BYTES / (1024 * 1024) * 10,
 ) / 10
@@ -27,6 +32,31 @@ const allowedDeclaredMimeTypes = new Set([
 ])
 
 export const runtime = 'nodejs'
+
+export const GET = async (request: Request) => {
+  const currentUser = await getCurrentUser()
+  if (!currentUser) return NextResponse.json({ message: 'Non autorisé.' }, { status: 401 })
+  if (currentUser.mustChangePassword) return NextResponse.json({ message: 'Accès refusé.' }, { status: 403 })
+
+  const url = new URL(request.url)
+  const parsed = galleryRequestSchema.safeParse({
+    cursor: url.searchParams.get('cursor'),
+    memberId: url.searchParams.get('memberId'),
+  })
+  if (!parsed.success) return NextResponse.json({ message: 'Paramètres invalides.' }, { status: 400 })
+
+  try {
+    const page = await getPhotoGalleryPage({
+      familyId: currentUser.familyId,
+      role: currentUser.role,
+      cursor: parsed.data.cursor,
+      memberId: parsed.data.memberId,
+    })
+    return NextResponse.json(page)
+  } catch {
+    return NextResponse.json({ message: 'Curseur invalide.' }, { status: 400 })
+  }
+}
 
 export const POST = async (request: Request) => {
   const currentUser = await getCurrentUser()

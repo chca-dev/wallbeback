@@ -10,6 +10,7 @@ import { posts, replies } from '@/db/schema/wall'
 import { requireReadyUser } from '@/lib/auth/session'
 import type { ActionResult } from '@/lib/action-result'
 import { removeProcessedImage } from '@/lib/media/storage'
+import { publishRealtimeEvent } from '@/lib/realtime/events'
 
 const contentSchema = z.string().trim().max(5000, 'Le message est trop long.')
 const requiredContentSchema = contentSchema.min(1, 'Écris un message.')
@@ -124,7 +125,25 @@ export const createPostAction = async (
     .returning({ id: posts.id })
 
   revalidatePath('/wall')
+  if (!parsed.data.hasPhotos) publishRealtimeEvent(currentUser.familyId, 'wall.updated')
   return { success: true, message: 'Publication ajoutée.', postId: post.id }
+}
+
+export const finalizePostAction = async (postId: string): Promise<WallActionState> => {
+  const currentUser = await requireReadyUser()
+  const parsed = z.uuid().safeParse(postId)
+  if (!parsed.success) return { error: 'Publication invalide.' }
+
+  const targetPost = await getManagedPost(parsed.data, currentUser.familyId)
+  if (!targetPost || targetPost.authorId !== currentUser.id) {
+    return { error: 'Cette publication est introuvable ou inaccessible.' }
+  }
+
+  revalidatePath('/wall')
+  revalidatePath('/photos')
+  publishRealtimeEvent(currentUser.familyId, 'wall.updated')
+  publishRealtimeEvent(currentUser.familyId, 'photos.updated')
+  return { success: true }
 }
 
 export const createReplyAction = async (
@@ -170,6 +189,7 @@ export const createReplyAction = async (
   })
 
   revalidatePath('/wall')
+  publishRealtimeEvent(currentUser.familyId, 'wall.updated')
   return { success: true, message: 'Réponse ajoutée.' }
 }
 
@@ -203,6 +223,7 @@ export const updatePostAction = async (
     .where(and(eq(posts.id, targetPost.id), eq(posts.familyId, currentUser.familyId)))
 
   revalidatePath('/wall')
+  publishRealtimeEvent(currentUser.familyId, 'wall.updated')
   return { success: true, message: 'Publication modifiée.' }
 }
 
@@ -258,6 +279,8 @@ export const deletePostAction = async (
 
   revalidatePath('/wall')
   revalidatePath('/photos')
+  publishRealtimeEvent(currentUser.familyId, 'wall.updated')
+  publishRealtimeEvent(currentUser.familyId, 'photos.updated')
   return { success: true, message: 'Publication supprimée.' }
 }
 
@@ -291,6 +314,7 @@ export const updateReplyAction = async (
     .where(and(eq(replies.id, targetReply.id), eq(replies.familyId, currentUser.familyId)))
 
   revalidatePath('/wall')
+  publishRealtimeEvent(currentUser.familyId, 'wall.updated')
   return { success: true, message: 'Réponse modifiée.' }
 }
 
@@ -321,5 +345,6 @@ export const deleteReplyAction = async (
   ))
 
   revalidatePath('/wall')
+  publishRealtimeEvent(currentUser.familyId, 'wall.updated')
   return { success: true, message: 'Réponse supprimée.' }
 }

@@ -12,6 +12,7 @@ import { getBannerKing } from '@/lib/banner-rotation'
 import { isMediaProcessingError, processBannerImage } from '@/lib/media/process-image'
 import { removeBannerImage, writeBannerImage } from '@/lib/media/storage'
 import { validateMultipartUploadRequest } from '@/lib/media/upload-request'
+import { publishRealtimeEvent } from '@/lib/realtime/events'
 
 export const runtime = 'nodejs'
 const cropSchema = z.object({ x: z.number().min(0).max(100), y: z.number().min(0).max(100), width: z.number().positive().max(100), height: z.number().positive().max(100) }).refine((crop) => crop.x + crop.width <= 100.01 && crop.y + crop.height <= 100.01)
@@ -60,5 +61,6 @@ export const POST = async (request: Request) => {
     await removeBannerImage(existingSettings.bannerStorageKey).catch(() => undefined)
   }
   revalidatePath('/wall')
+  publishRealtimeEvent(currentUser.familyId, 'banner.updated')
   return NextResponse.json({ success: true })
 }

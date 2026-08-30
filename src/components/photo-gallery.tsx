@@ -1,5 +1,6 @@
 'use client'
 
+import { useInfiniteQuery } from '@tanstack/react-query'
 import Image from 'next/image'
 import {
   ChevronLeft,
@@ -13,29 +14,53 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { Avatar } from '@/components/avatar'
 import type {
-  PhotoGalleryItem,
-  PhotoGalleryMember,
+  PhotoGalleryPage,
 } from '@/lib/photos/queries'
 
 type PhotoGalleryProps = {
   familyName: string
-  members: PhotoGalleryMember[]
-  photos: PhotoGalleryItem[]
+  initialPage: PhotoGalleryPage
+}
+
+const fetchPhotoPage = async (cursor: string | null, memberId: string | null) => {
+  const searchParams = new URLSearchParams()
+  if (cursor) searchParams.set('cursor', cursor)
+  if (memberId) searchParams.set('memberId', memberId)
+  const response = await fetch(`/api/photos?${searchParams.toString()}`)
+  if (!response.ok) throw new Error('La galerie n’a pas pu être actualisée.')
+  return response.json() as Promise<PhotoGalleryPage>
 }
 
 export const PhotoGallery = ({
   familyName,
-  members,
-  photos: allPhotos,
+  initialPage,
 }: PhotoGalleryProps) => {
   const [person, setPerson] = useState('all')
   const [activePhotoId, setActivePhotoId] = useState<string | null>(null)
   const dialogRef = useRef<HTMLDivElement>(null)
   const lastFocusedElementRef = useRef<HTMLElement | null>(null)
 
-  const photos = useMemo(() => person === 'all'
-    ? allPhotos
-    : allPhotos.filter((photo) => photo.ownerId === person), [allPhotos, person])
+  const memberId = person === 'all' ? null : person
+  const galleryQuery = useInfiniteQuery({
+    queryKey: ['photos', memberId],
+    queryFn: ({ pageParam }) => fetchPhotoPage(pageParam, memberId),
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
+    initialData: person === 'all'
+      ? { pages: [initialPage], pageParams: [null] }
+      : undefined,
+  })
+  const galleryPages = galleryQuery.data?.pages ?? []
+  const members = galleryPages[0]?.members ?? initialPage.members
+  const totalCount = galleryPages[0]?.totalCount ?? 0
+  const photos = useMemo(() => {
+    const seenPhotoIds = new Set<string>()
+    return galleryPages.flatMap((page) => page.items).filter((photo) => {
+      if (seenPhotoIds.has(photo.id)) return false
+      seenPhotoIds.add(photo.id)
+      return true
+    })
+  }, [galleryPages])
   const filterMembers = members.filter((member) => member.photoCount > 0)
   const activeIndex = activePhotoId === null
     ? -1
@@ -130,10 +155,10 @@ export const PhotoGallery = ({
         <h1 className='font-display text-2xl font-semibold tracking-[-0.03em] min-[521px]:text-[28px]'>
           Photos
         </h1>
-        <span className='font-mono text-xs text-faint'>{photos.length}</span>
+        <span className='font-mono text-xs text-faint'>{totalCount}</span>
       </div>
 
-      {allPhotos.length ? (
+      {initialPage.totalCount ? (
         <div
           role='tablist'
           aria-label='Filtrer selon la personne qui a ajouté la photo'
@@ -154,7 +179,7 @@ export const PhotoGallery = ({
             </span>
             Tout le monde
             <span className={`rounded-lg px-1.5 py-px font-mono text-[9px] font-medium ${person === 'all' ? 'bg-primary text-white' : 'bg-surface-soft text-faint'}`}>
-              {allPhotos.length}
+              {members.reduce((total, member) => total + member.photoCount, 0)}
             </span>
           </button>
           {filterMembers.map((member) => {
@@ -185,7 +210,9 @@ export const PhotoGallery = ({
         </div>
       ) : null}
 
-      {photos.length ? (
+      {galleryQuery.isPending ? (
+        <div className='py-16 text-center text-sm font-semibold text-muted'>Chargement des photos…</div>
+      ) : photos.length ? (
         <section
           aria-label='Galerie photo'
           className='grid grid-cols-2 gap-1.5 min-[521px]:gap-2 min-[821px]:grid-cols-3 min-[821px]:gap-2.5 min-[1101px]:grid-cols-4'
@@ -224,7 +251,7 @@ export const PhotoGallery = ({
             </button>
           ))}
         </section>
-      ) : allPhotos.length ? (
+      ) : initialPage.totalCount ? (
         <div className='py-[60px] text-center'>
           <p className='text-[15px] font-semibold'>Pas encore de photo pour cette personne.</p>
         </div>
@@ -239,6 +266,25 @@ export const PhotoGallery = ({
           </p>
         </section>
       )}
+
+      {galleryQuery.hasNextPage ? (
+        <div className='mt-6 flex justify-center'>
+          <button
+            type='button'
+            disabled={galleryQuery.isFetchingNextPage}
+            onClick={() => void galleryQuery.fetchNextPage()}
+            className='min-h-10 rounded-control border border-border bg-surface px-5 text-xs font-semibold text-muted transition-colors hover:border-primary-soft hover:text-foreground disabled:opacity-50'
+          >
+            {galleryQuery.isFetchingNextPage ? 'Chargement…' : 'Voir plus de photos'}
+          </button>
+        </div>
+      ) : null}
+
+      {galleryQuery.isError ? (
+        <p role='alert' className='mt-5 text-center text-sm font-semibold text-danger'>
+          La galerie n’a pas pu être actualisée.
+        </p>
+      ) : null}
 
       {activePhoto ? (
         <div

@@ -1,4 +1,5 @@
 import { AppShell } from '@/components/app-shell'
+import { QueryProvider } from '@/components/query-provider'
 import type { AvatarTone } from '@/lib/avatar'
 import { requireCurrentUser } from '@/lib/auth/session'
 import { redirect } from 'next/navigation'
@@ -17,20 +18,22 @@ const PrivateLayout = async ({ children }: { children: React.ReactNode }) => {
   }
 
   return (
-    <AppShell
-      user={{
-        id: currentUser.id,
-        displayName: currentUser.displayName,
-        familyName: currentUser.familyName,
-        role: currentUser.role,
-        avatarTone: getAvatarTone(currentUser.avatarTone),
-        hasAvatar: Boolean(currentUser.avatarStorageKey),
-        themeMode: currentUser.themeMode,
-        themePalette: currentUser.themePalette,
-      }}
-    >
-      {children}
-    </AppShell>
+    <QueryProvider>
+      <AppShell
+        user={{
+          id: currentUser.id,
+          displayName: currentUser.displayName,
+          familyName: currentUser.familyName,
+          role: currentUser.role,
+          avatarTone: getAvatarTone(currentUser.avatarTone),
+          hasAvatar: Boolean(currentUser.avatarStorageKey),
+          themeMode: currentUser.themeMode,
+          themePalette: currentUser.themePalette,
+        }}
+      >
+        {children}
+      </AppShell>
+    </QueryProvider>
   )
 }
 

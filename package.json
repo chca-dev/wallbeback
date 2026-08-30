@@ -17,6 +17,7 @@
     "db:seed-admin": "node scripts/seed-admin.mjs"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.102.8",
     "bcryptjs": "^3.0.3",
     "drizzle-orm": "^0.45.2",
     "lucide-react": "^1.33.0",
