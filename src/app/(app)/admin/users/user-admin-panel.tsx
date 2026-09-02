@@ -3,6 +3,7 @@
 import { KeyRound, Power, Save, UserPlus } from 'lucide-react'
 import { useActionState } from 'react'
 import { Avatar } from '@/components/avatar'
+import { PasswordInput } from '@/components/password-input'
 import type { UserRole } from '@/db/schema/enums'
 import type { AvatarTone } from '@/lib/avatar'
 import {
@@ -119,11 +120,19 @@ const CreateUserForm = () => {
           <input name="email" type="email" required maxLength={320} autoCapitalize="none" className={inputClassName} />
           <FieldError state={state} name="email" />
         </label>
-        <label className={labelClassName}>
-          Mot de passe temporaire
-          <input name="temporaryPassword" type="password" required minLength={12} maxLength={128} className={inputClassName} />
+        <div className={labelClassName}>
+          <label htmlFor='create-temporary-password'>Mot de passe temporaire</label>
+          <PasswordInput
+            id='create-temporary-password'
+            name='temporaryPassword'
+            autoComplete='new-password'
+            required
+            minLength={12}
+            maxLength={128}
+            className='w-full rounded-control border border-border bg-surface py-2.5 pl-3 pr-11 text-sm text-foreground outline-none transition focus:border-primary'
+          />
           <FieldError state={state} name="temporaryPassword" />
-        </label>
+        </div>
         <RoleSelect />
         <ToneSelect />
         <div className="flex flex-col-reverse gap-3 md:col-span-2 md:flex-row md:items-center md:justify-between">
@@ -201,11 +210,19 @@ const UserCard = ({ user, isCurrentUser }: { user: ManagedUser, isCurrentUser: b
           <summary className="cursor-pointer list-none text-xs font-bold text-primary-strong">Définir un mot de passe temporaire</summary>
           <form action={passwordAction} className="mt-4 grid gap-3">
             <input type="hidden" name="userId" value={user.id} />
-            <label className={labelClassName}>
-              Nouveau mot de passe temporaire
-              <input name="temporaryPassword" type="password" required minLength={12} maxLength={128} className={inputClassName} />
+            <div className={labelClassName}>
+              <label htmlFor={`temporary-password-${user.id}`}>Nouveau mot de passe temporaire</label>
+              <PasswordInput
+                id={`temporary-password-${user.id}`}
+                name='temporaryPassword'
+                autoComplete='new-password'
+                required
+                minLength={12}
+                maxLength={128}
+                className='w-full rounded-control border border-border bg-surface py-2.5 pl-3 pr-11 text-sm text-foreground outline-none transition focus:border-primary'
+              />
               <FieldError state={passwordState} name="temporaryPassword" />
-            </label>
+            </div>
             <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
               <Feedback state={passwordState} />
               <button type="submit" disabled={passwordPending} className="inline-flex items-center justify-center gap-2 rounded-control border border-border px-3 py-2 text-xs font-bold text-foreground disabled:opacity-60">

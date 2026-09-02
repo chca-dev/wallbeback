@@ -3,6 +3,7 @@
 import { ArrowRight } from 'lucide-react'
 import { useActionState } from 'react'
 import { loginAction, type LoginActionState } from '@/app/auth-actions'
+import { PasswordInput } from '@/components/password-input'
 
 const initialState: LoginActionState = {}
 
@@ -37,15 +38,14 @@ export const LoginForm = () => {
         <label htmlFor="password" className="mb-2 block text-xs font-bold text-muted">
           Mot de passe
         </label>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          autoComplete="current-password"
+        <PasswordInput
+          id='password'
+          name='password'
+          autoComplete='current-password'
           required
           aria-describedby={state.fieldErrors?.password ? 'password-error' : undefined}
-          className="h-12 w-full rounded-control border border-border bg-surface px-4 text-sm outline-none transition-colors placeholder:text-faint focus:border-primary"
-          placeholder="••••••••••••"
+          className='h-12 w-full rounded-control border border-border bg-surface pl-4 pr-12 text-sm outline-none transition-colors placeholder:text-faint focus:border-primary'
+          placeholder='••••••••••••'
         />
         {state.fieldErrors?.password ? (
           <p id="password-error" className="mt-2 text-xs text-danger">

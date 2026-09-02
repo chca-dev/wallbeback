@@ -43,6 +43,13 @@
       "when": 1788129468669,
       "tag": "0005_chief_purifiers",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1788342962288,
+      "tag": "0006_classy_butterfly",
+      "breakpoints": true
     }
   ]
 }

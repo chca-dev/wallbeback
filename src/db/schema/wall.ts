@@ -85,7 +85,7 @@ export const postReactions = pgTable(
     index('post_reactions_family_post_idx').on(table.familyId, table.postId),
     check(
       'post_reactions_value_check',
-      sql`${table.reaction} in ('heart', 'laugh', 'like', 'wow', 'sad', 'celebrate')`,
+      sql`${table.reaction} in ('heart', 'laugh', 'like', 'wow', 'sad', 'celebrate', 'poop')`,
     ),
   ],
 )

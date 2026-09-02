@@ -6,6 +6,7 @@ import {
   changePasswordAction,
   type ChangePasswordActionState,
 } from '@/app/auth-actions'
+import { PasswordInput } from '@/components/password-input'
 
 const initialState: ChangePasswordActionState = {}
 
@@ -18,15 +19,14 @@ export const ChangePasswordForm = () => {
         <label htmlFor="password" className="mb-2 block text-xs font-bold text-muted">
           Nouveau mot de passe
         </label>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          autoComplete="new-password"
+        <PasswordInput
+          id='password'
+          name='password'
+          autoComplete='new-password'
           minLength={12}
           required
           aria-describedby={state.fieldErrors?.password ? 'new-password-error' : undefined}
-          className="h-12 w-full rounded-control border border-border bg-surface px-4 text-sm outline-none transition-colors focus:border-primary"
+          className='h-12 w-full rounded-control border border-border bg-surface pl-4 pr-12 text-sm outline-none transition-colors focus:border-primary'
         />
         {state.fieldErrors?.password ? (
           <p id="new-password-error" className="mt-2 text-xs text-danger">
@@ -41,14 +41,13 @@ export const ChangePasswordForm = () => {
         <label htmlFor="confirmation" className="mb-2 block text-xs font-bold text-muted">
           Confirmer le mot de passe
         </label>
-        <input
-          id="confirmation"
-          name="confirmation"
-          type="password"
-          autoComplete="new-password"
+        <PasswordInput
+          id='confirmation'
+          name='confirmation'
+          autoComplete='new-password'
           required
           aria-describedby={state.fieldErrors?.confirmation ? 'confirmation-error' : undefined}
-          className="h-12 w-full rounded-control border border-border bg-surface px-4 text-sm outline-none transition-colors focus:border-primary"
+          className='h-12 w-full rounded-control border border-border bg-surface pl-4 pr-12 text-sm outline-none transition-colors focus:border-primary'
         />
         {state.fieldErrors?.confirmation ? (
           <p id="confirmation-error" className="mt-2 text-xs text-danger">
