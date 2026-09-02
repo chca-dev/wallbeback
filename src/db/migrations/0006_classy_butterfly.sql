@@ -1,0 +1,2 @@
+ALTER TABLE "post_reactions" DROP CONSTRAINT "post_reactions_value_check";--> statement-breakpoint
+ALTER TABLE "post_reactions" ADD CONSTRAINT "post_reactions_value_check" CHECK ("post_reactions"."reaction" in ('heart', 'laugh', 'like', 'wow', 'sad', 'celebrate', 'poop'));

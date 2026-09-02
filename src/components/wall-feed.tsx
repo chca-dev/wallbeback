@@ -54,6 +54,7 @@ const postReactionOptions = [
   { id: 'wow', emoji: '😮', label: 'Waouh' },
   { id: 'sad', emoji: '😢', label: 'Triste' },
   { id: 'celebrate', emoji: '🎉', label: 'Bravo' },
+  { id: 'poop', emoji: '💩', label: 'Caca' },
 ] as const
 
 const fetchWallPage = async (cursor: string | null) => {

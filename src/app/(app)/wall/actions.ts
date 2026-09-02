@@ -45,7 +45,7 @@ const postIdSchema = z.object({ postId: z.uuid() })
 const replyIdSchema = z.object({ replyId: z.uuid() })
 const reactionSchema = z.object({
   postId: z.uuid(),
-  reaction: z.enum(['heart', 'laugh', 'like', 'wow', 'sad', 'celebrate']),
+  reaction: z.enum(['heart', 'laugh', 'like', 'wow', 'sad', 'celebrate', 'poop']),
 })
 
 export type WallActionState = ActionResult<'content'> & {
