@@ -26,6 +26,19 @@ const nextConfig: NextConfig = {
   },
   headers: async () => [
     {
+      source: '/push-sw.js',
+      headers: [
+        {
+          key: 'Cache-Control',
+          value: 'no-cache',
+        },
+        {
+          key: 'Service-Worker-Allowed',
+          value: '/',
+        },
+      ],
+    },
+    {
       source: '/(.*)',
       headers: [
         {

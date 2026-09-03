@@ -2,6 +2,7 @@ import { relations } from 'drizzle-orm'
 import { events } from './events'
 import { families } from './families'
 import { photoPeople, photos } from './photos'
+import { pushSubscriptions } from './push-subscriptions'
 import { sessions } from './sessions'
 import { settings } from './settings'
 import { users } from './users'
@@ -14,6 +15,7 @@ export const familyRelations = relations(families, ({ many, one }) => ({
   replies: many(replies),
   photos: many(photos),
   events: many(events),
+  pushSubscriptions: many(pushSubscriptions),
   settings: one(settings),
 }))
 
@@ -29,6 +31,18 @@ export const userRelations = relations(users, ({ many, one }) => ({
   photoPeople: many(photoPeople),
   createdEvents: many(events, { relationName: 'eventCreator' }),
   linkedEvents: many(events, { relationName: 'eventMember' }),
+  pushSubscriptions: many(pushSubscriptions),
+}))
+
+export const pushSubscriptionRelations = relations(pushSubscriptions, ({ one }) => ({
+  family: one(families, {
+    fields: [pushSubscriptions.familyId],
+    references: [families.id],
+  }),
+  user: one(users, {
+    fields: [pushSubscriptions.userId],
+    references: [users.id],
+  }),
 }))
 
 export const sessionRelations = relations(sessions, ({ one }) => ({

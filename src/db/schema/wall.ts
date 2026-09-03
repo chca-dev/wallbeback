@@ -16,6 +16,7 @@ export const posts = pgTable(
       .references(() => users.id, { onDelete: 'restrict' }),
     content: text('content').notNull(),
     visibility: postVisibility('visibility').default('family').notNull(),
+    pushNotifiedAt: timestamp('push_notified_at', { withTimezone: true, mode: 'date' }),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' })
       .defaultNow()
       .notNull(),
