@@ -11,6 +11,7 @@ import { requireReadyUser } from '@/lib/auth/session'
 import type { ActionResult } from '@/lib/action-result'
 import { removeProcessedImage } from '@/lib/media/storage'
 import { publishRealtimeEvent } from '@/lib/realtime/events'
+import { notifyFamilyAboutPost } from '@/lib/push/send-post-notification'
 
 const contentSchema = z.string().trim().max(5000, 'Le message est trop long.')
 const requiredContentSchema = contentSchema.min(1, 'Écris un message.')
@@ -129,7 +130,12 @@ export const createPostAction = async (
     .returning({ id: posts.id })
 
   revalidatePath('/wall')
-  if (!parsed.data.hasPhotos) publishRealtimeEvent(currentUser.familyId, 'wall.updated')
+  if (!parsed.data.hasPhotos) {
+    publishRealtimeEvent(currentUser.familyId, 'wall.updated')
+    await notifyFamilyAboutPost(post.id, currentUser.familyId).catch((error) => {
+      console.error('Échec de notification après publication', { errorName: error instanceof Error ? error.name : 'unknown' })
+    })
+  }
   return { success: true, message: 'Publication ajoutée.', postId: post.id }
 }
 
@@ -147,6 +153,9 @@ export const finalizePostAction = async (postId: string): Promise<WallActionStat
   revalidatePath('/photos')
   publishRealtimeEvent(currentUser.familyId, 'wall.updated')
   publishRealtimeEvent(currentUser.familyId, 'photos.updated')
+  await notifyFamilyAboutPost(targetPost.id, currentUser.familyId).catch((error) => {
+    console.error('Échec de notification après finalisation', { errorName: error instanceof Error ? error.name : 'unknown' })
+  })
   return { success: true }
 }
 

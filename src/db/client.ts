@@ -4,11 +4,13 @@ import { events } from '@/db/schema/events'
 import { families } from '@/db/schema/families'
 import { loginRateLimits } from '@/db/schema/login-rate-limits'
 import { photoPeople, photos } from '@/db/schema/photos'
+import { pushSubscriptions } from '@/db/schema/push-subscriptions'
 import {
   eventRelations,
   familyRelations,
   photoPeopleRelations,
   photoRelations,
+  pushSubscriptionRelations,
   postRelations,
   replyRelations,
   sessionRelations,
@@ -31,6 +33,8 @@ const schema = {
   photoPeopleRelations,
   photos,
   photoRelations,
+  pushSubscriptions,
+  pushSubscriptionRelations,
   posts,
   postRelations,
   replies,

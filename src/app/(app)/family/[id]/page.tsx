@@ -6,6 +6,7 @@ import { notFound } from 'next/navigation'
 import { z } from 'zod'
 import { Avatar } from '@/components/avatar'
 import { MemberProfileForm } from '@/components/member-profile-form'
+import { PushNotificationControls } from '@/components/push-notification-controls'
 import { db } from '@/db/client'
 import type { UserRole } from '@/db/schema/enums'
 import { events } from '@/db/schema/events'
@@ -44,7 +45,7 @@ const MemberPage = async ({ params }: MemberPageProps) => {
     <header className='flex items-center gap-4 rounded-card border border-border bg-surface p-6'><Avatar name={member.displayName} tone={getAvatarTone(member.avatarTone)} imageUrl={member.avatarStorageKey ? `/avatar/${member.id}` : null} size='lg' /><div><h1 className='font-display text-2xl font-semibold'>{member.displayName}</h1><p className='mt-1 text-xs text-muted'>Niveau d’accès : {roleLabels[member.role]}</p></div></header>
     <div className='mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]'><main className='space-y-6'>
       <section className='rounded-card border border-border bg-surface p-5'><h2 className='flex items-center gap-2 font-display text-lg font-semibold'><CalendarDays size={18} /> Prochains événements</h2>{upcoming.length ? <div className='mt-4 space-y-2'>{upcoming.map((event) => <Link key={event.id} href={`/calendar?month=${event.startsAt.toISOString().slice(0, 7)}`} className='block rounded-xl bg-surface-soft p-3'><strong className='text-sm'>{event.title}</strong><p className='mt-1 text-xs capitalize text-muted'>{event.allDay ? new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long', timeZone: 'Europe/Paris' }).format(event.startsAt) : formatEventDate(event.startsAt)}</p></Link>)}</div> : <p className='mt-4 text-sm text-muted'>Aucun événement à venir.</p>}</section>
-    </main>{currentUser.id === member.id ? <aside><MemberProfileForm displayName={member.displayName} avatarTone={member.avatarTone} hasAvatar={Boolean(member.avatarStorageKey)} /></aside> : null}</div>
+    </main>{currentUser.id === member.id ? <aside className='space-y-6'><MemberProfileForm displayName={member.displayName} avatarTone={member.avatarTone} hasAvatar={Boolean(member.avatarStorageKey)} /><section className='rounded-card border border-border bg-surface p-5'><h2 className='font-display text-lg font-semibold'>Notifications</h2><div className='mt-3'><PushNotificationControls /></div></section></aside> : null}</div>
   </div>
 }
 
