@@ -11,7 +11,10 @@ import { requireReadyUser } from '@/lib/auth/session'
 import type { ActionResult } from '@/lib/action-result'
 import { removeProcessedImage } from '@/lib/media/storage'
 import { publishRealtimeEvent } from '@/lib/realtime/events'
-import { notifyFamilyAboutPost } from '@/lib/push/send-post-notification'
+import {
+  notifyFamilyAboutPost,
+  notifyPostParticipantsAboutReply,
+} from '@/lib/push/send-post-notification'
 
 const contentSchema = z.string().trim().max(5000, 'Le message est trop long.')
 const requiredContentSchema = contentSchema.min(1, 'Écris un message.')
@@ -194,15 +197,28 @@ export const createReplyAction = async (
     return { error: 'Cette publication est introuvable ou inaccessible.' }
   }
 
-  await db.insert(replies).values({
-    familyId: currentUser.familyId,
-    postId: targetPost.id,
-    authorId: currentUser.id,
-    content: parsed.data.content,
-  })
+  const [reply] = await db
+    .insert(replies)
+    .values({
+      familyId: currentUser.familyId,
+      postId: targetPost.id,
+      authorId: currentUser.id,
+      content: parsed.data.content,
+    })
+    .returning({ id: replies.id })
 
   revalidatePath('/wall')
   publishRealtimeEvent(currentUser.familyId, 'wall.updated')
+  await notifyPostParticipantsAboutReply(
+    targetPost.id,
+    reply.id,
+    currentUser.id,
+    currentUser.familyId,
+  ).catch((error) => {
+    console.error('Échec de notification après commentaire', {
+      errorName: error instanceof Error ? error.name : 'unknown',
+    })
+  })
   return { success: true, message: 'Réponse ajoutée.' }
 }
 

@@ -11,7 +11,7 @@ self.addEventListener('push', (event) => {
   event.waitUntil(self.registration.showNotification(payload.title || 'Wall Be Back', {
     body: payload.body || 'Une nouvelle publication familiale est disponible.',
     icon: '/icon-192.png',
-    badge: '/icon-192.png',
+    badge: '/wall-be-back-icon-white.png',
     tag: payload.tag,
     data: { url: payload.url || '/wall' },
   }))

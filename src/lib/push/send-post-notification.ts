@@ -1,9 +1,9 @@
-import { and, eq, isNull, ne } from 'drizzle-orm'
+import { and, eq, inArray, isNull, ne } from 'drizzle-orm'
 import webPush from 'web-push'
 import { db } from '@/db/client'
 import { pushSubscriptions } from '@/db/schema/push-subscriptions'
 import { users } from '@/db/schema/users'
-import { posts } from '@/db/schema/wall'
+import { posts, replies } from '@/db/schema/wall'
 import { serverEnvironment } from '@/lib/env'
 
 const isPushConfigured = Boolean(
@@ -88,6 +88,88 @@ export const notifyFamilyAboutPost = async (postId: string, familyId: string) =>
         return
       }
       console.error('Échec d’envoi Web Push', { statusCode })
+    }
+  }))
+}
+
+export const notifyPostParticipantsAboutReply = async (
+  postId: string,
+  replyId: string,
+  replyAuthorId: string,
+  familyId: string,
+) => {
+  if (!isPushConfigured) return
+
+  const [targetPost] = await db
+    .select({
+      authorId: posts.authorId,
+      visibility: posts.visibility,
+    })
+    .from(posts)
+    .where(and(eq(posts.id, postId), eq(posts.familyId, familyId)))
+    .limit(1)
+
+  if (!targetPost) return
+
+  const previousParticipants = await db
+    .select({ authorId: replies.authorId })
+    .from(replies)
+    .where(and(eq(replies.postId, postId), eq(replies.familyId, familyId)))
+
+  const recipientUserIds = [...new Set([
+    targetPost.authorId,
+    ...previousParticipants.map(({ authorId }) => authorId),
+  ])].filter((userId) => userId !== replyAuthorId)
+
+  if (!recipientUserIds.length) return
+
+  const [replyAuthor] = await db
+    .select({ displayName: users.displayName })
+    .from(users)
+    .where(and(eq(users.id, replyAuthorId), eq(users.familyId, familyId)))
+    .limit(1)
+
+  const recipients = await db
+    .select({
+      id: pushSubscriptions.id,
+      endpoint: pushSubscriptions.endpoint,
+      p256dh: pushSubscriptions.p256dh,
+      auth: pushSubscriptions.auth,
+    })
+    .from(pushSubscriptions)
+    .innerJoin(users, and(
+      eq(users.id, pushSubscriptions.userId),
+      eq(users.familyId, pushSubscriptions.familyId),
+      eq(users.isActive, true),
+    ))
+    .where(and(
+      eq(pushSubscriptions.familyId, familyId),
+      inArray(pushSubscriptions.userId, recipientUserIds),
+      targetPost.visibility === 'adults' ? ne(users.role, 'child') : undefined,
+    ))
+
+  const payload = JSON.stringify({
+    title: 'Wall Be Back',
+    body: replyAuthor
+      ? `Nouveau commentaire de ${replyAuthor.displayName}`
+      : 'Nouveau commentaire sur une publication',
+    url: `/wall#post-${postId}`,
+    tag: `reply-${replyId}`,
+  })
+
+  await Promise.allSettled(recipients.map(async (subscription) => {
+    try {
+      await webPush.sendNotification({
+        endpoint: subscription.endpoint,
+        keys: { p256dh: subscription.p256dh, auth: subscription.auth },
+      }, payload)
+    } catch (error) {
+      const statusCode = getPushStatusCode(error)
+      if (statusCode === 404 || statusCode === 410) {
+        await db.delete(pushSubscriptions).where(eq(pushSubscriptions.id, subscription.id))
+        return
+      }
+      console.error('Échec d’envoi Web Push après commentaire', { statusCode })
     }
   }))
 }
