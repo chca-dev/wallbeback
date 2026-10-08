@@ -1,9 +1,9 @@
-import { and, eq, inArray, isNull, ne } from 'drizzle-orm'
+import { and, eq, isNull, ne } from 'drizzle-orm'
 import webPush from 'web-push'
 import { db } from '@/db/client'
 import { pushSubscriptions } from '@/db/schema/push-subscriptions'
 import { users } from '@/db/schema/users'
-import { posts, replies } from '@/db/schema/wall'
+import { posts } from '@/db/schema/wall'
 import { serverEnvironment } from '@/lib/env'
 
 const isPushConfigured = Boolean(
@@ -102,7 +102,6 @@ export const notifyPostParticipantsAboutReply = async (
 
   const [targetPost] = await db
     .select({
-      authorId: posts.authorId,
       visibility: posts.visibility,
     })
     .from(posts)
@@ -110,18 +109,6 @@ export const notifyPostParticipantsAboutReply = async (
     .limit(1)
 
   if (!targetPost) return
-
-  const previousParticipants = await db
-    .select({ authorId: replies.authorId })
-    .from(replies)
-    .where(and(eq(replies.postId, postId), eq(replies.familyId, familyId)))
-
-  const recipientUserIds = [...new Set([
-    targetPost.authorId,
-    ...previousParticipants.map(({ authorId }) => authorId),
-  ])].filter((userId) => userId !== replyAuthorId)
-
-  if (!recipientUserIds.length) return
 
   const [replyAuthor] = await db
     .select({ displayName: users.displayName })
@@ -144,7 +131,7 @@ export const notifyPostParticipantsAboutReply = async (
     ))
     .where(and(
       eq(pushSubscriptions.familyId, familyId),
-      inArray(pushSubscriptions.userId, recipientUserIds),
+      ne(pushSubscriptions.userId, replyAuthorId),
       targetPost.visibility === 'adults' ? ne(users.role, 'child') : undefined,
     ))
 
